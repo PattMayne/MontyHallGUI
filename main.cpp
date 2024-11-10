@@ -11,27 +11,27 @@
 *		- New buttons "switch" and "don't switch"
 *		- Load functions from console-based game
 *		- Stats on TOP BAR (total wins / Total YES wins / Total NO wins )
-* 
-* 
+*
+*
 *	THINGS TO LEARN:
 *		- Difference between a RECT and a SURFACE
 *		- Difference between an IMAGE and a TEXTURE (DONE... see below)
-* 
-* 
+*
+*
 * IMAGE is simply an image loaded onto a SURFACE!
 * We use the IMG_Load function which returns a SURFACE
-* 
+*
 * IMGs loaded onto SURFACES are good for MANIPULATING.
 * TEXTURES are good for RENDERING onto other surfaces.
-* 
+*
 * So for tiles I will use TEXTURES.
 * And for limbs in the battle screen I will use SURFACES (with images loaded onto them), because I'll sometimes be manipulating them in real time.
 * ... or maybe not! SDL_RenderCopyEx (which does flipping) operates on TEXTURES.
 * This could be really interesting.
-* 
-* 
-* 
-* 
+*
+*
+*
+*
 * 1. Create WINDOW
 * 2. Create RENDERER (which belongs to the window... feed the window into the new renderer in its constructor)
 * 3. Create SURFACES (or just get the surface FROM the window).
@@ -42,17 +42,17 @@
 *		SDL_UpdateWindowSurface(gWindow);
 		SDL_RenderPresent(gRenderer);
 		---- > SDL_RenderPresent is MORE EFFICIENT!
-* 7. 
-* 
-* 
+* 7.
+*
+*
 * IMAGE DISPLAYED SUCCESSFULLY!
-* 
+*
 * NEXT:
 * - put door size in constants
 * - doors are clickable
-* 
-* 
-* 
+*
+*
+*
 */
 
 
@@ -81,6 +81,10 @@ void handleClick(SDL_Event* e);
 // 3 rectangles to display the door
 SDL_Rect doorRects[3];
 
+SDL_Window* mainWindow = NULL;
+SDL_Renderer* mainRenderer = NULL;
+SDL_Surface* mainWindowSurface = NULL;
+
 int main(int argc, char* args[]) {
 	std::cout << "THis is the main function";
 
@@ -91,15 +95,19 @@ int main(int argc, char* args[]) {
 	int frameTimeElapsed; // how much time has elapsed during this frame
 
 	// ONCE THIS WORKS declare all the variables as NULL and then do NULL checks to cancel out in case of errors.
-	SDL_Window* mainWindow = SDL_CreateWindow("Main Window", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
-	SDL_Renderer* mainRenderer = SDL_CreateRenderer(mainWindow, -1, SDL_RENDERER_ACCELERATED);
-	SDL_Surface* mainWindowSurface = SDL_GetWindowSurface(mainWindow);
+	mainWindow = SDL_CreateWindow("Main Window", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
+	mainRenderer = SDL_CreateRenderer(mainWindow, -1, SDL_RENDERER_ACCELERATED);
+	mainWindowSurface = SDL_GetWindowSurface(mainWindow);
 	SDL_Surface* doorSurface = IMG_Load("assets/door_400_400.png");
 	SDL_Texture* doorTexture = SDL_CreateTextureFromSurface(mainRenderer, doorSurface);
 
 	doorRects[0] = { getDoorHorizontalPosition(0), DOOR_Y_POSITION, DOOR_WIDTH, DOOR_HEIGHT };
 	doorRects[1] = { getDoorHorizontalPosition(1), DOOR_Y_POSITION, DOOR_WIDTH, DOOR_HEIGHT };
 	doorRects[2] = { getDoorHorizontalPosition(2), DOOR_Y_POSITION, DOOR_WIDTH, DOOR_HEIGHT };
+
+	// paint it white first (put this in a function later to avoid repeating the code during the game loop)
+	SDL_SetRenderDrawColor(mainRenderer, 0xFF, 0xFF, 0xFF, 0xFF);
+	SDL_RenderClear(mainRenderer);
 
 	// Main loop flag
 	bool running = true;
@@ -122,13 +130,12 @@ int main(int argc, char* args[]) {
 				running = false;
 			}
 			else if (e.type == SDL_MOUSEBUTTONDOWN) {
+				// Clear window if user input happened
+				SDL_SetRenderDrawColor(mainRenderer, 0xFF, 0xFF, 0xFF, 0xFF);
+				SDL_RenderClear(mainRenderer);
 				handleClick(&e);
 			}
 		}
-
-		// Clear window
-		SDL_SetRenderDrawColor(mainRenderer, 0xFF, 0xFF, 0xFF, 0xFF);
-		SDL_RenderClear(mainRenderer);
 
 		SDL_RenderCopyEx(mainRenderer, doorTexture, NULL, &doorRects[0], 0, NULL, SDL_FLIP_NONE);
 		SDL_RenderCopyEx(mainRenderer, doorTexture, NULL, &doorRects[1], 0, NULL, SDL_FLIP_NONE);
@@ -151,7 +158,7 @@ int main(int argc, char* args[]) {
 
 
 void handleClick(SDL_Event* e) {
-	
+
 	// Get location of click
 	int x, y;
 	SDL_GetMouseState(&x, &y);
@@ -173,6 +180,9 @@ void handleClick(SDL_Event* e) {
 		for (int i = 0; i < 3; ++i) {
 			if (x >= doorRects[i].x && x < (doorRects[i].x + DOOR_WIDTH)) {
 				std::cout << "\n HIT DOOR " + std::to_string(i + 1) + '\n';
+				// Set the draw color (RGBA)
+				SDL_SetRenderDrawColor(mainRenderer, 30, 134, 214, 1);
+				SDL_RenderFillRect(mainRenderer, &doorRects[i]);
 			}
 		}
 	}

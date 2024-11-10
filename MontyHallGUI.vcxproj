@@ -73,10 +73,12 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <IncludePath>D:\Prog\vclib\SDL2\include;D:\Prog\vclib\SDL2_image-2.8.2\include;D:\Prog\vclib\SDL2_ttf-2.22.0\include;$(IncludePath)</IncludePath>
     <LibraryPath>D:\Prog\vclib\SDL2\lib\x64;D:\Prog\vclib\SDL2_image-2.8.2\lib\x64;D:\Prog\vclib\SDL2_ttf-2.22.0\lib\x64;$(LibraryPath)</LibraryPath>
+    <AllProjectBMIsArePublic>true</AllProjectBMIsArePublic>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <IncludePath>D:\Prog\vclib\SDL2\include;D:\Prog\vclib\SDL2_image-2.8.2\include;D:\Prog\vclib\SDL2_ttf-2.22.0\include;$(IncludePath)</IncludePath>
     <LibraryPath>D:\Prog\vclib\SDL2\lib\x64;D:\Prog\vclib\SDL2_image-2.8.2\lib\x64;D:\Prog\vclib\SDL2_ttf-2.22.0\lib\x64;$(LibraryPath)</LibraryPath>
+    <AllProjectBMIsArePublic>true</AllProjectBMIsArePublic>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -113,7 +115,8 @@
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <EnableModules>false</EnableModules>
+      <BuildStlModules>false</BuildStlModules>
+      <ScanSourceForModuleDependencies>false</ScanSourceForModuleDependencies>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -130,7 +133,8 @@
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <EnableModules>false</EnableModules>
+      <BuildStlModules>false</BuildStlModules>
+      <ScanSourceForModuleDependencies>false</ScanSourceForModuleDependencies>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
