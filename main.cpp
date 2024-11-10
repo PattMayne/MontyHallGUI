@@ -13,11 +13,6 @@
 *		- Stats on TOP BAR (total wins / Total YES wins / Total NO wins )
 *
 *
-*	THINGS TO LEARN:
-*		- Difference between a RECT and a SURFACE
-*		- Difference between an IMAGE and a TEXTURE (DONE... see below)
-*
-*
 * IMAGE is simply an image loaded onto a SURFACE!
 * We use the IMG_Load function which returns a SURFACE
 *
@@ -77,6 +72,7 @@ void exit(SDL_Surface* surface, SDL_Window* window);
 
 int getDoorHorizontalPosition(int doorIndex);
 void handleClick(SDL_Event* e);
+bool initializeSDL2();
 
 // 3 rectangles to display the door
 SDL_Rect doorRects[3];
@@ -87,6 +83,14 @@ SDL_Surface* mainWindowSurface = NULL;
 
 int main(int argc, char* args[]) {
 	std::cout << "THis is the main function";
+
+	bool initialized = initializeSDL2();
+
+	if (!initialized) {
+		std::cout << "Closing due to initialization errors.";
+		exit(mainWindowSurface, mainWindow);
+		return -1;
+	}	
 
 	// Timeout data
 	const int TARGET_FPS = 60;
@@ -154,6 +158,23 @@ int main(int argc, char* args[]) {
 
 	exit(mainWindowSurface, mainWindow);
 	return 0;
+}
+
+bool initializeSDL2() {
+	bool success = true;
+	// Initialize SDL
+	if (SDL_Init(SDL_INIT_VIDEO) < 0) {
+		std::cerr << "SDL failed to initialize. SDL_Error: " << SDL_GetError() << std::endl;
+		success = false;
+	}
+
+	// Initialize TTF
+	if (TTF_Init() == -1) {
+		std::cerr << "TTF failed to initialize. TTF_Error: " << TTF_GetError() << std::endl;
+		success = false;
+	}
+
+	return success;
 }
 
 
