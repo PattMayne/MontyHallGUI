@@ -80,6 +80,14 @@ SDL_Rect doorRects[3];
 SDL_Window* mainWindow = NULL;
 SDL_Renderer* mainRenderer = NULL;
 SDL_Surface* mainWindowSurface = NULL;
+//SDL_Texture* titleTextTexture = createTextTexture(renderer, "Hello, SDL_ttf!", font, textColor);
+
+// font stuff
+TTF_Font* font = NULL;
+SDL_Color textColor = { 50, 50, 50 };
+
+SDL_Rect titleTextRect;
+SDL_Texture* titleTextTexture = NULL;
 
 int main(int argc, char* args[]) {
 	std::cout << "THis is the main function";
@@ -90,7 +98,7 @@ int main(int argc, char* args[]) {
 		std::cout << "Closing due to initialization errors.";
 		exit(mainWindowSurface, mainWindow);
 		return -1;
-	}	
+	}
 
 	// Timeout data
 	const int TARGET_FPS = 60;
@@ -102,12 +110,22 @@ int main(int argc, char* args[]) {
 	mainWindow = SDL_CreateWindow("Main Window", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
 	mainRenderer = SDL_CreateRenderer(mainWindow, -1, SDL_RENDERER_ACCELERATED);
 	mainWindowSurface = SDL_GetWindowSurface(mainWindow);
+
+	// Door Stuff
 	SDL_Surface* doorSurface = IMG_Load("assets/door_400_400.png");
 	SDL_Texture* doorTexture = SDL_CreateTextureFromSurface(mainRenderer, doorSurface);
 
 	doorRects[0] = { getDoorHorizontalPosition(0), DOOR_Y_POSITION, DOOR_WIDTH, DOOR_HEIGHT };
 	doorRects[1] = { getDoorHorizontalPosition(1), DOOR_Y_POSITION, DOOR_WIDTH, DOOR_HEIGHT };
 	doorRects[2] = { getDoorHorizontalPosition(2), DOOR_Y_POSITION, DOOR_WIDTH, DOOR_HEIGHT };
+
+	// font stuff
+	titleTextRect = { PADDING, PADDING, SCREEN_WIDTH - (PADDING * 2), 55 };
+	std::string titleText = "Monty Hall Problem";
+	SDL_Surface* titleTextSurface = TTF_RenderText_Solid(font, titleText.c_str(), textColor);
+	// Create texture from surface pixels
+	titleTextTexture = SDL_CreateTextureFromSurface(mainRenderer, titleTextSurface);
+	SDL_FreeSurface(titleTextSurface);  // Free the surface after creating the texture
 
 	// paint it white first (put this in a function later to avoid repeating the code during the game loop)
 	SDL_SetRenderDrawColor(mainRenderer, 0xFF, 0xFF, 0xFF, 0xFF);
@@ -144,6 +162,7 @@ int main(int argc, char* args[]) {
 		SDL_RenderCopyEx(mainRenderer, doorTexture, NULL, &doorRects[0], 0, NULL, SDL_FLIP_NONE);
 		SDL_RenderCopyEx(mainRenderer, doorTexture, NULL, &doorRects[1], 0, NULL, SDL_FLIP_NONE);
 		SDL_RenderCopyEx(mainRenderer, doorTexture, NULL, &doorRects[2], 0, NULL, SDL_FLIP_NONE);
+		SDL_RenderCopyEx(mainRenderer, titleTextTexture, NULL, &titleTextRect, 0, NULL, SDL_FLIP_NONE);
 
 		// Update window
 		SDL_RenderPresent(mainRenderer);
@@ -171,6 +190,13 @@ bool initializeSDL2() {
 	// Initialize TTF
 	if (TTF_Init() == -1) {
 		std::cerr << "TTF failed to initialize. TTF_Error: " << TTF_GetError() << std::endl;
+		success = false;
+	}
+
+	font = TTF_OpenFont("assets/Crang.ttf", 28);
+
+	if (!font) {
+		std::cerr << "Font failed to load. TTF_Error: " << TTF_GetError() << std::endl;
 		success = false;
 	}
 
@@ -208,6 +234,8 @@ void handleClick(SDL_Event* e) {
 		}
 	}
 }
+
+
 
 
 int getDoorHorizontalPosition(int doorIndex) {
