@@ -37,15 +37,19 @@
 *		SDL_UpdateWindowSurface(gWindow);
 		SDL_RenderPresent(gRenderer);
 		---- > SDL_RenderPresent is MORE EFFICIENT!
-* 7.
+* 7. CLEAN UP CODE
+*		- It is a MESS
+*		- SDL components should be global
+*		- Game components can be within the main function, and passed around as references/pointers or as values, in function parameters.
 *
 *
 * IMAGE DISPLAYED SUCCESSFULLY!
-*
+* 
 * NEXT:
-* - put door size in constants
-* - doors are clickable
-*
+*	- Print instructions
+*		- The instructions should be able to CHANGE over time.
+*	- Print stats
+*	- It should print EVERYTHING each time, but EVERYTHING should be based on state. (don't just print once and leave it until there's a change).
 *
 *
 */
@@ -58,8 +62,17 @@
 #include <iostream>
 #include <SDL_ttf.h>
 #include <cmath>
+#include<vector>
+#include<cstdlib>
+#include <time.h>
 
 import Door;
+
+using std::string;
+using std::cout;
+using std::cin;
+using std::vector;
+using std::to_string;
 
 // global constants
 const int SCREEN_WIDTH = 640;
@@ -67,7 +80,7 @@ const int SCREEN_HEIGHT = 720;
 const int PADDING = 20;
 const int DOOR_WIDTH = (SCREEN_WIDTH - (PADDING * 4)) / 3;
 const int DOOR_HEIGHT = DOOR_WIDTH;
-const int DOOR_Y_POSITION = 155;
+const int DOOR_Y_POSITION = DOOR_HEIGHT;
 
 
 void exit(SDL_Surface* surface, SDL_Window* window);
@@ -82,25 +95,50 @@ SDL_Rect doorRects[3];
 SDL_Window* mainWindow = NULL;
 SDL_Renderer* mainRenderer = NULL;
 SDL_Surface* mainWindowSurface = NULL;
-//SDL_Texture* titleTextTexture = createTextTexture(renderer, "Hello, SDL_ttf!", font, textColor);
 
 // font stuff
 TTF_Font* font = NULL;
 SDL_Color textColor = { 50, 50, 50 };
-
 SDL_Rect titleTextRect;
 SDL_Texture* titleTextTexture = NULL;
 
+// game state stuff
+
+enum class GamePhase {
+	uninitialized, chooseDoor, chooseSwitch, gameOver
+};
+
+GamePhase gameState = GamePhase::uninitialized;
+
+
+
 int main(int argc, char* args[]) {
-	std::cout << "THis is the main function";
+	cout << "THis is the main function";
 
 	bool initialized = initializeSDL2();
 
 	if (!initialized) {
-		std::cout << "Closing due to initialization errors.";
+		cout << "Closing due to initialization errors.";
 		exit(mainWindowSurface, mainWindow);
 		return -1;
 	}
+
+	// Some of this shoulf go in startGame function
+	// And there should be a GameState SINGLETON so I don't have to pass all these variables into the "startGame" function
+	// It can be one global SINGLETON
+
+	gameState = GamePhase::chooseDoor;
+
+	// These can ONLY increment... and so they'll be encapsulated within the singleton, with no option of decrement or resetting!
+	int yesSwitchWins = 0;
+	int yesSwitchLosses = 0;
+	int noSwitchWins = 0;
+	int noSwitchLosses = 0;
+
+
+	// Create three doors
+	vector<Door> doors{ Door(), Door(), Door() };
+	srand(time(0)); // This guarantees a NEW random number each time the rand() program runs
 
 	// Timeout data
 	const int TARGET_FPS = 60;
@@ -121,7 +159,7 @@ int main(int argc, char* args[]) {
 	doorRects[1] = { getDoorHorizontalPosition(1), DOOR_Y_POSITION, DOOR_WIDTH, DOOR_HEIGHT };
 	doorRects[2] = { getDoorHorizontalPosition(2), DOOR_Y_POSITION, DOOR_WIDTH, DOOR_HEIGHT };
 
-	// font stuff
+	// title font stuff
 	titleTextRect = { PADDING, PADDING, SCREEN_WIDTH - (PADDING * 2), 55 };
 	std::string titleText = "Monty Hall Problem";
 	SDL_Surface* titleTextSurface = TTF_RenderText_Solid(font, titleText.c_str(), textColor);
@@ -213,22 +251,22 @@ void handleClick(SDL_Event* e) {
 	SDL_GetMouseState(&x, &y);
 
 	// display the info (delete later)
-	std::cout << "\n\nMouse clicked";
-	std::string xString = "\nX: " + std::to_string(x);
-	std::string yString = "\nY: " + std::to_string(y);
-	std::string printString = yString + xString;
-	std::cout << printString;
+	cout << "\n\nMouse clicked";
+	string xString = "\nX: " + std::to_string(x);
+	string yString = "\nY: " + std::to_string(y);
+	string printString = yString + xString;
+	cout << printString;
 
 	// see if it hit a button:
 
 	if (y >= DOOR_Y_POSITION && y < DOOR_Y_POSITION + DOOR_HEIGHT) {
-		std::cout << "\n\n CLICKED INSIDE THE BUTTON PLACE";
+		cout << "\n\n CLICKED INSIDE THE BUTTON PLACE";
 
 		// run through the doors and check it against their x/y
 
 		for (int i = 0; i < 3; ++i) {
 			if (x >= doorRects[i].x && x < (doorRects[i].x + DOOR_WIDTH)) {
-				std::cout << "\n HIT DOOR " + std::to_string(i + 1) + '\n';
+				cout << "\n HIT DOOR " + std::to_string(i + 1) + '\n';
 				// Set the draw color (RGBA)
 				SDL_SetRenderDrawColor(mainRenderer, 30, 134, 214, 1);
 				SDL_RenderFillRect(mainRenderer, &doorRects[i]);
@@ -236,6 +274,9 @@ void handleClick(SDL_Event* e) {
 		}
 	}
 }
+
+
+// Door manipulation functions ( get functions from MontyHallConsole )
 
 
 
@@ -255,3 +296,5 @@ void exit(SDL_Surface* surface, SDL_Window* window)
 
 	SDL_Quit();
 }
+
+

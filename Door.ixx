@@ -24,11 +24,11 @@ public:
 		isWinner = true;
 	}
 
-	void chooseDoor() {
+	void choose() {
 		isChosen = true;
 	}
 
-	void unchooseDoor() {
+	void unchoose() {
 		isChosen = false;
 	}
 
