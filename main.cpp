@@ -84,11 +84,18 @@ const int DOOR_HEIGHT = DOOR_WIDTH;
 const int DOOR_Y_POSITION = DOOR_HEIGHT * 1.25;
 const int TEXT_HEIGHT = 54;
 const int STATS_TEXT_HEIGHT = 34;
+const int SWITCH_BUTTON_WIDTH = 90;
+const int SWITCH_BUTTON_HEIGHT = 30;
+const int SWITCH_BUTTON_PADDING = 10;
 
 const string loserText = "LOSER";
 const string winnerText = "WINNER!";
 const string titleText = "Monty Hall Problem";
 const string mysteryText = "  ?  ";
+
+const string switchQuestionText = "Switch selected door?";
+const string switchButtonYesText = "YES";
+const string switchButtonNoText = "NO";
 
 string yesWinsText = "";
 string yesLossesText = "";
@@ -103,13 +110,7 @@ bool initializeSDL2();
 void draw();
 void setWinsAndLossesTextures();
 
-// 3 rectangles to display the door
-SDL_Rect doorRects[3];
-SDL_Rect doorTextRects[3];
-
-SDL_Surface* doorSurface = NULL;
 SDL_Texture* doorTexture = NULL;
-SDL_Surface* openDoorSurface = NULL;
 SDL_Texture* openDoorTexture = NULL;
 
 SDL_Window* mainWindow = NULL;
@@ -132,10 +133,37 @@ SDL_Texture* yesLossesTextTexture = NULL;
 SDL_Texture* noWinsTextTexture = NULL;
 SDL_Texture* noLossesTextTexture = NULL;
 
+SDL_Texture* switchButtonYesTexture;
+SDL_Texture* switchButtonYesTextTexture;
+SDL_Texture* switchButtonNoTexture;
+SDL_Texture* switchButtonNoTextTexture;
+
+SDL_Texture* switchQuestionTextTexture;
+
+
+// Rectangles
+
+// rectangles to display the doors and the WINNER and LOSER text behind the doors
+SDL_Rect doorRects[3];
+SDL_Rect doorTextRects[3];
+
+// stats rectangles
 SDL_Rect yesWinsTextRect;
 SDL_Rect yesLossesTextRect;
 SDL_Rect noWinsTextRect;
 SDL_Rect noLossesTextRect;
+
+// Switch button Rectangle
+SDL_Rect switchButtonYesRect;
+SDL_Rect switchButtonYesTextRect;
+SDL_Rect switchButtonNoRect;
+SDL_Rect switchButtonNoTextRect;
+
+SDL_Rect switchQuestionTextRect;
+
+// Instructions rectangle
+SDL_Rect instructionsRect;
+
 
 GameState gameState;
 
@@ -267,14 +295,14 @@ bool initializeSDL2() {
 	}
 
 	// Door Stuff
-	doorSurface = IMG_Load("assets/door_400_400.png");
+	SDL_Surface* doorSurface = IMG_Load("assets/door_400_400.png");
 
 	if (!doorSurface) {
 		std::cerr << "Image failed to load. SDL_image: " << IMG_GetError() << std::endl;
 		return false;
 	}
 
-	openDoorSurface = IMG_Load("assets/open_door_400_400.png");
+	SDL_Surface* openDoorSurface = IMG_Load("assets/open_door_400_400.png");
 
 	if (!openDoorSurface) {
 		std::cerr << "Image failed to load. SDL_image: " << IMG_GetError() << std::endl;
@@ -309,6 +337,42 @@ bool initializeSDL2() {
 	// bottom right
 	noLossesTextRect = { PADDING + (SCREEN_WIDTH / 2), (PADDING * 3) + (TEXT_HEIGHT * 2), (SCREEN_WIDTH / 2) - (PADDING * 2), STATS_TEXT_HEIGHT };
 
+	// Switch Button Stuff
+	switchQuestionTextRect = {
+		PADDING,
+		DOOR_Y_POSITION + DOOR_HEIGHT + PADDING,
+		(SCREEN_WIDTH / 2) - (PADDING * 2),
+		TEXT_HEIGHT
+	};
+
+	switchButtonYesRect = {
+		(SCREEN_WIDTH / 2) + PADDING,
+		switchQuestionTextRect.y,
+		SCREEN_WIDTH / 4 - (PADDING * 2),
+		TEXT_HEIGHT
+	};
+
+	switchButtonNoRect = {
+		((SCREEN_WIDTH / 4) * 3) + PADDING,
+		switchQuestionTextRect.y,
+		SCREEN_WIDTH / 4 - (PADDING * 2),
+		TEXT_HEIGHT
+	};
+
+	switchButtonNoTextRect = {
+		switchButtonNoRect.x + SWITCH_BUTTON_PADDING,
+		switchButtonNoRect.y + SWITCH_BUTTON_PADDING,
+		switchButtonNoRect.w - (SWITCH_BUTTON_PADDING * 2),
+		switchButtonNoRect.h - (SWITCH_BUTTON_PADDING * 2)
+	};
+
+	switchButtonYesTextRect = {
+		switchButtonYesRect.x + SWITCH_BUTTON_PADDING,
+		switchButtonYesRect.y + SWITCH_BUTTON_PADDING,
+		switchButtonYesRect.w - (SWITCH_BUTTON_PADDING * 2),
+		switchButtonYesRect.h - (SWITCH_BUTTON_PADDING * 2)
+	};
+
 	setWinsAndLossesTextures();
 
 	// create text textures
@@ -325,11 +389,25 @@ bool initializeSDL2() {
 	SDL_Surface* mysteryTextSurface = TTF_RenderText_Blended(font, mysteryText.c_str(), mysteryTextColor);
 	mysteryTextTexture = SDL_CreateTextureFromSurface(mainRenderer, mysteryTextSurface);
 
+	// make switch question & button surfaces
+
+	SDL_Surface* switchButtonYesTextSurface = TTF_RenderText_Blended(font, switchButtonYesText.c_str(), textColor);
+	switchButtonYesTextTexture = SDL_CreateTextureFromSurface(mainRenderer, switchButtonYesTextSurface);
+
+	SDL_Surface* switchButtonNoTextSurface = TTF_RenderText_Blended(font, switchButtonNoText.c_str(), textColor);
+	switchButtonNoTextTexture = SDL_CreateTextureFromSurface(mainRenderer, switchButtonNoTextSurface);
+
+	SDL_Surface* switchQuestionSurface = TTF_RenderText_Blended(font, switchQuestionText.c_str(), textColor);
+	switchQuestionTextTexture = SDL_CreateTextureFromSurface(mainRenderer, switchQuestionSurface);
+
 	// Free the surface after creating the texture
 	SDL_FreeSurface(titleTextSurface);
 	SDL_FreeSurface(loserTextSurface);
 	SDL_FreeSurface(winnerTextSurface);
 	SDL_FreeSurface(mysteryTextSurface);
+	SDL_FreeSurface(switchButtonYesTextSurface);
+	SDL_FreeSurface(switchButtonNoTextSurface);
+	SDL_FreeSurface(switchQuestionSurface);
 
 	return true;
 }
@@ -428,6 +506,17 @@ void draw() {
 			);
 		}
 	}
+
+	// Draw switch question items (put in conditional statement later)
+
+	SDL_SetRenderDrawColor(mainRenderer, 255, 141, 0, 1);
+	SDL_RenderFillRect(mainRenderer, &switchButtonYesRect);
+	SDL_RenderFillRect(mainRenderer, &switchButtonNoRect);
+
+	SDL_RenderCopyEx(mainRenderer, switchQuestionTextTexture, NULL, &switchQuestionTextRect, 0, NULL, SDL_FLIP_NONE);
+	SDL_RenderCopyEx(mainRenderer, switchButtonYesTextTexture, NULL, &switchButtonYesTextRect, 0, NULL, SDL_FLIP_NONE);
+	SDL_RenderCopyEx(mainRenderer, switchButtonNoTextTexture, NULL, &switchButtonNoTextRect, 0, NULL, SDL_FLIP_NONE);
+
 	
 	// draw stats
 	SDL_RenderCopyEx(mainRenderer, yesWinsTextTexture, NULL, &yesWinsTextRect, 0, NULL, SDL_FLIP_NONE);
