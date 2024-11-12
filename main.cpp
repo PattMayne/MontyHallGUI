@@ -81,13 +81,13 @@ const int SCREEN_HEIGHT = 720;
 const int PADDING = 20;
 const int DOOR_WIDTH = (SCREEN_WIDTH - (PADDING * 4)) / 3;
 const int DOOR_HEIGHT = DOOR_WIDTH;
-const int DOOR_Y_POSITION = DOOR_HEIGHT;
+const int DOOR_Y_POSITION = DOOR_HEIGHT * 1.25;
 const int TEXT_HEIGHT = 54;
 
 const string loserText = "LOSER";
 const string winnerText = "WINNER!";
 const string titleText = "Monty Hall Problem";
-
+const string mysteryText = "  ?  ";
 
 void exit(SDL_Surface* surface, SDL_Window* window);
 
@@ -112,10 +112,12 @@ SDL_Surface* mainWindowSurface = NULL;
 // font stuff
 TTF_Font* font = NULL;
 SDL_Color textColor = { 50, 50, 50 };
+SDL_Color mysteryTextColor = { 250, 250, 50 };
 SDL_Rect titleTextRect;
 SDL_Texture* titleTextTexture = NULL;
 SDL_Texture* loserTextTexture = NULL;
 SDL_Texture* winnerTextTexture = NULL;
+SDL_Texture* mysteryTextTexture = NULL;
 
 GameState gameState;
 
@@ -290,6 +292,9 @@ bool initializeSDL2() {
 	SDL_Surface* winnerTextSurface = TTF_RenderText_Blended(font, winnerText.c_str(), textColor);
 	winnerTextTexture = SDL_CreateTextureFromSurface(mainRenderer, winnerTextSurface);
 
+	SDL_Surface* mysteryTextSurface = TTF_RenderText_Blended(font, mysteryText.c_str(), mysteryTextColor);
+	mysteryTextTexture = SDL_CreateTextureFromSurface(mainRenderer, mysteryTextSurface);
+
 	// Free the surface after creating the texture
 	SDL_FreeSurface(titleTextSurface);
 	SDL_FreeSurface(loserTextSurface);
@@ -379,6 +384,20 @@ void draw() {
 			NULL,
 			SDL_FLIP_NONE
 		);
+
+		// draw question marks on unopened doors IF it's the "should I switch" phase.
+
+		if (gameState.getGamePhase() == GamePhase::chooseSwitch && !doors[i].getOpen()) {
+			SDL_RenderCopyEx(
+				mainRenderer,
+				mysteryTextTexture,
+				NULL,
+				&doorTextRects[i],
+				0,
+				NULL,
+				SDL_FLIP_NONE
+			);
+		}
 	}
 	
 	//	doorTextRects
