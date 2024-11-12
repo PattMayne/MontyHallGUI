@@ -2,8 +2,8 @@ module;
 export module GameState;
 
 #include<vector>
-#include <cstdlib> // Needed for rand() and srand()
-#include <ctime>   // Needed for time()
+#include<cstdlib> // Needed for rand() and srand()
+#include<ctime>   // Needed for time()
 #include<cstdlib>
 
 using namespace std;
@@ -29,6 +29,10 @@ export class Door {
 
 		void open() {
 			isOpen = true;
+		}
+
+		void close() {
+			isOpen = false;
 		}
 
 		void setWinner() {
@@ -116,6 +120,12 @@ export class GameState {
 			}
 		}
 
+		void closeAllDoors() {
+			for (int i = 0; i < 3; ++i) {
+				doors[i].close();
+			}
+		}
+
 		void setupGame() {
 			gamePhase = GamePhase::chooseDoor;
 			doors = { Door(), Door(), Door() };
@@ -145,6 +155,9 @@ export class GameState {
 			unchooseAllDoors();
 			doors[chosenDoorIndex].choose();
 			gamePhase = GamePhase::chooseSwitch;
+
+			// open a random OTHER door
+			openOneLosingDoor();
 		}
 
 		int getYesSwitchWIns() {

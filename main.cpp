@@ -41,7 +41,7 @@
 *		- It is a MESS
 *		- SDL components should be global
 *		- Game components can be within the main function, and passed around as references/pointers or as values, in function parameters.
-*
+* 8. Save colors as variables (blue for chosen + closed, red for losing + open, green for winning + open)
 *
 * IMAGE DISPLAYED SUCCESSFULLY!
 * 
@@ -83,6 +83,10 @@ const int DOOR_WIDTH = (SCREEN_WIDTH - (PADDING * 4)) / 3;
 const int DOOR_HEIGHT = DOOR_WIDTH;
 const int DOOR_Y_POSITION = DOOR_HEIGHT;
 
+const string loserText = "LOSER";
+const string winnerText = "WINNER!";
+const string titleText = "Monty Hall Problem";
+
 
 void exit(SDL_Surface* surface, SDL_Window* window);
 
@@ -108,6 +112,8 @@ TTF_Font* font = NULL;
 SDL_Color textColor = { 50, 50, 50 };
 SDL_Rect titleTextRect;
 SDL_Texture* titleTextTexture = NULL;
+SDL_Texture* loserTextTexture = NULL;
+SDL_Texture* winnerTextTexture = NULL;
 
 GameState gameState;
 
@@ -181,8 +187,6 @@ int main(int argc, char* args[]) {
 				draw();
 			}
 		}
-
-
 
 		// Delay so the app doesn't just crash
 		frameTimeElapsed = SDL_GetTicks() - frameStartTime; // Calculate how long the frame took to process
@@ -260,12 +264,28 @@ bool initializeSDL2() {
 	}
 
 	doorTexture = SDL_CreateTextureFromSurface(mainRenderer, doorSurface);
-	openDoorTexture = SDL_CreateTextureFromSurface(mainRenderer, doorSurface);
+	openDoorTexture = SDL_CreateTextureFromSurface(mainRenderer, openDoorSurface);
 
 	// Door rectangles
 	doorRects[0] = { getDoorHorizontalPosition(0), DOOR_Y_POSITION, DOOR_WIDTH, DOOR_HEIGHT };
 	doorRects[1] = { getDoorHorizontalPosition(1), DOOR_Y_POSITION, DOOR_WIDTH, DOOR_HEIGHT };
 	doorRects[2] = { getDoorHorizontalPosition(2), DOOR_Y_POSITION, DOOR_WIDTH, DOOR_HEIGHT };
+
+	// create text textures
+	// create surfaces first (dies with scope) and then create textures from surface pixels
+	SDL_Surface* titleTextSurface = TTF_RenderText_Blended(font, titleText.c_str(), textColor);
+	titleTextTexture = SDL_CreateTextureFromSurface(mainRenderer, titleTextSurface);
+
+	SDL_Surface* loserTextSurface = TTF_RenderText_Blended(font, loserText.c_str(), textColor);
+	loserTextTexture = SDL_CreateTextureFromSurface(mainRenderer, loserTextSurface);
+
+	SDL_Surface* winnerTextSurface = TTF_RenderText_Blended(font, winnerText.c_str(), textColor);
+	winnerTextTexture = SDL_CreateTextureFromSurface(mainRenderer, winnerTextSurface);
+
+	// Free the surface after creating the texture
+	SDL_FreeSurface(titleTextSurface);
+	SDL_FreeSurface(loserTextSurface);
+	SDL_FreeSurface(winnerTextSurface);
 
 	return true;
 }
@@ -300,7 +320,7 @@ void handleClick(SDL_Event* e) {
 					// Set the draw color (RGBA)
 					SDL_SetRenderDrawColor(mainRenderer, 30, 134, 214, 1);
 					SDL_RenderFillRect(mainRenderer, &doorRects[i]);
-				}				
+				}			
 			}
 		}
 	}
@@ -313,31 +333,34 @@ void draw() {
 	SDL_SetRenderDrawColor(mainRenderer, 0xFF, 0xFF, 0xFF, 0xFF);
 	SDL_RenderClear(mainRenderer);
 
-	std::string titleText = "Monty Hall Problem";
-	//SDL_Surface* titleTextSurface = TTF_RenderText_Solid(font, titleText.c_str(), textColor);
-	SDL_Surface* titleTextSurface = TTF_RenderText_Blended(font, titleText.c_str(), textColor);
-	// Create texture from surface pixels
-	titleTextTexture = SDL_CreateTextureFromSurface(mainRenderer, titleTextSurface);
-
-	SDL_FreeSurface(titleTextSurface);  // Free the surface after creating the texture
-
 	// paint it white first (put this in a function later to avoid repeating the code during the game loop)
 	SDL_SetRenderDrawColor(mainRenderer, 0xFF, 0xFF, 0xFF, 0xFF);
 	SDL_RenderClear(mainRenderer);
 
-	// If a door is chosen, draw the blue box beneath it
+	// Draw colored rectangles behind certain doors (open doors or chosen door)
 	for (int i = 0; i < 3; ++i) {
 		vector<Door> doors = gameState.getDoors();
 		if (doors[i].getChosen()) {
 			SDL_SetRenderDrawColor(mainRenderer, 30, 134, 214, 1);
 			SDL_RenderFillRect(mainRenderer, &doorRects[i]);
+		} else if (doors[i].getOpen() && !doors[i].getWinner()) {
+			SDL_SetRenderDrawColor(mainRenderer, 220, 34, 34, 1);
+			SDL_RenderFillRect(mainRenderer, &doorRects[i]);
+			// Draw "LOSER"
 		}
 	}
 
 	// draw the doors
-	SDL_RenderCopyEx(mainRenderer, doorTexture, NULL, &doorRects[0], 0, NULL, SDL_FLIP_NONE);
-	SDL_RenderCopyEx(mainRenderer, doorTexture, NULL, &doorRects[1], 0, NULL, SDL_FLIP_NONE);
-	SDL_RenderCopyEx(mainRenderer, doorTexture, NULL, &doorRects[2], 0, NULL, SDL_FLIP_NONE);
+	for (int i = 0; i < 3; ++i) {
+		SDL_RenderCopyEx(
+			mainRenderer,
+			gameState.getDoors()[i].getOpen() ? openDoorTexture : doorTexture,
+			NULL,
+			&doorRects[i],
+			0,
+			NULL,
+			SDL_FLIP_NONE);
+	}
 	
 	// draw title
 	SDL_RenderCopyEx(mainRenderer, titleTextTexture, NULL, &titleTextRect, 0, NULL, SDL_FLIP_NONE);
