@@ -110,6 +110,18 @@ export class GameState {
 			}
 		}
 
+		void unchooseAllDoors() {
+			for (int i = 0; i < 3; ++i) {
+				doors[i].unchoose();
+			}
+		}
+
+		void setupGame() {
+			gamePhase = GamePhase::chooseDoor;
+			doors = { Door(), Door(), Door() };
+			setWinner();
+		}
+
 
 	public:
 		vector<Door> getDoors() {
@@ -119,11 +131,10 @@ export class GameState {
 		GameState() {
 			// what happens when I put this in the constructor? Should I pass it in through a parameter instead? Pass what in?
 			srand(time(0)); // This guarantees a NEW random number each time the rand() program runs
-			gamePhase = GamePhase::chooseDoor;
-			doors = { Door(), Door(), Door() };
-			setWinner();
-			// next choose a winning door
+			setupGame();
 
+			// These don't change during the program's run.
+			// So we can play the game multiple times and see the cumulative stats.
 			yesSwitchWins = 0;
 			yesSwitchLosses = 0;
 			noSwitchWins = 0;
@@ -131,9 +142,7 @@ export class GameState {
 		}
 
 		void chooseDoor(int chosenDoorIndex) {
-			for (int i = 0; i < 3; ++i) {
-				doors[i].unchoose();
-			}
+			unchooseAllDoors();
 			doors[chosenDoorIndex].choose();
 			gamePhase = GamePhase::chooseSwitch;
 		}
@@ -179,6 +188,10 @@ export class GameState {
 			}
 			return -1;
 		}
-	
+
+		void resetGame() {
+			setupGame();
+		}
+		
 };
 
