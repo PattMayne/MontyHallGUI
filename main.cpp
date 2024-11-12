@@ -89,9 +89,13 @@ void exit(SDL_Surface* surface, SDL_Window* window);
 int getDoorHorizontalPosition(int doorIndex);
 void handleClick(SDL_Event* e);
 bool initializeSDL2();
+void draw();
 
 // 3 rectangles to display the door
 SDL_Rect doorRects[3];
+
+SDL_Surface* doorSurface = NULL;
+SDL_Texture* doorTexture = NULL;
 
 SDL_Window* mainWindow = NULL;
 SDL_Renderer* mainRenderer = NULL;
@@ -149,8 +153,8 @@ int main(int argc, char* args[]) {
 	mainWindowSurface = SDL_GetWindowSurface(mainWindow);
 
 	// Door Stuff
-	SDL_Surface* doorSurface = IMG_Load("assets/door_400_400.png");
-	SDL_Texture* doorTexture = SDL_CreateTextureFromSurface(mainRenderer, doorSurface);
+	doorSurface = IMG_Load("assets/door_400_400.png");
+	doorTexture = SDL_CreateTextureFromSurface(mainRenderer, doorSurface);
 
 	doorRects[0] = { getDoorHorizontalPosition(0), DOOR_Y_POSITION, DOOR_WIDTH, DOOR_HEIGHT };
 	doorRects[1] = { getDoorHorizontalPosition(1), DOOR_Y_POSITION, DOOR_WIDTH, DOOR_HEIGHT };
@@ -158,15 +162,9 @@ int main(int argc, char* args[]) {
 
 	// title font stuff
 	titleTextRect = { PADDING, PADDING, SCREEN_WIDTH - (PADDING * 2), 55 };
-	std::string titleText = "Monty Hall Problem";
-	SDL_Surface* titleTextSurface = TTF_RenderText_Solid(font, titleText.c_str(), textColor);
-	// Create texture from surface pixels
-	titleTextTexture = SDL_CreateTextureFromSurface(mainRenderer, titleTextSurface);
-	SDL_FreeSurface(titleTextSurface);  // Free the surface after creating the texture
-
-	// paint it white first (put this in a function later to avoid repeating the code during the game loop)
-	SDL_SetRenderDrawColor(mainRenderer, 0xFF, 0xFF, 0xFF, 0xFF);
-	SDL_RenderClear(mainRenderer);
+	
+	// Draw once before the loop starts
+	draw();
 
 	// Main loop flag
 	bool running = true;
@@ -189,20 +187,13 @@ int main(int argc, char* args[]) {
 				running = false;
 			}
 			else if (e.type == SDL_MOUSEBUTTONDOWN) {
-				// Clear window if user input happened
-				SDL_SetRenderDrawColor(mainRenderer, 0xFF, 0xFF, 0xFF, 0xFF);
-				SDL_RenderClear(mainRenderer);
+
 				handleClick(&e);
+				draw();
 			}
 		}
 
-		SDL_RenderCopyEx(mainRenderer, doorTexture, NULL, &doorRects[0], 0, NULL, SDL_FLIP_NONE);
-		SDL_RenderCopyEx(mainRenderer, doorTexture, NULL, &doorRects[1], 0, NULL, SDL_FLIP_NONE);
-		SDL_RenderCopyEx(mainRenderer, doorTexture, NULL, &doorRects[2], 0, NULL, SDL_FLIP_NONE);
-		SDL_RenderCopyEx(mainRenderer, titleTextTexture, NULL, &titleTextRect, 0, NULL, SDL_FLIP_NONE);
 
-		// Update window
-		SDL_RenderPresent(mainRenderer);
 
 		// Delay so the app doesn't just crash
 		frameTimeElapsed = SDL_GetTicks() - frameStartTime; // Calculate how long the frame took to process
@@ -264,6 +255,7 @@ void handleClick(SDL_Event* e) {
 		for (int i = 0; i < 3; ++i) {
 			if (x >= doorRects[i].x && x < (doorRects[i].x + DOOR_WIDTH)) {
 				cout << "\n HIT DOOR " + std::to_string(i + 1) + '\n';
+				gameState.chooseDoor(i);
 				// Set the draw color (RGBA)
 				SDL_SetRenderDrawColor(mainRenderer, 30, 134, 214, 1);
 				SDL_RenderFillRect(mainRenderer, &doorRects[i]);
@@ -273,7 +265,44 @@ void handleClick(SDL_Event* e) {
 }
 
 
-// Door manipulation functions ( get functions from MontyHallConsole )
+
+
+void draw() {
+	// Clear window if user input happened
+	SDL_SetRenderDrawColor(mainRenderer, 0xFF, 0xFF, 0xFF, 0xFF);
+	SDL_RenderClear(mainRenderer);
+
+	std::string titleText = "Monty Hall Problem";
+	SDL_Surface* titleTextSurface = TTF_RenderText_Solid(font, titleText.c_str(), textColor);
+	// Create texture from surface pixels
+	titleTextTexture = SDL_CreateTextureFromSurface(mainRenderer, titleTextSurface);
+
+	SDL_FreeSurface(titleTextSurface);  // Free the surface after creating the texture
+
+	// paint it white first (put this in a function later to avoid repeating the code during the game loop)
+	SDL_SetRenderDrawColor(mainRenderer, 0xFF, 0xFF, 0xFF, 0xFF);
+	SDL_RenderClear(mainRenderer);
+
+	// If a door is chosen, draw the blue box beneath it
+	for (int i = 0; i < 3; ++i) {
+		vector<Door> doors = gameState.getDoors();
+		if (doors[i].getChosen()) {
+			SDL_SetRenderDrawColor(mainRenderer, 30, 134, 214, 1);
+			SDL_RenderFillRect(mainRenderer, &doorRects[i]);
+		}
+	}
+
+	// draw the doors
+	SDL_RenderCopyEx(mainRenderer, doorTexture, NULL, &doorRects[0], 0, NULL, SDL_FLIP_NONE);
+	SDL_RenderCopyEx(mainRenderer, doorTexture, NULL, &doorRects[1], 0, NULL, SDL_FLIP_NONE);
+	SDL_RenderCopyEx(mainRenderer, doorTexture, NULL, &doorRects[2], 0, NULL, SDL_FLIP_NONE);
+	
+	// draw title
+	SDL_RenderCopyEx(mainRenderer, titleTextTexture, NULL, &titleTextRect, 0, NULL, SDL_FLIP_NONE);
+
+	// Update window
+	SDL_RenderPresent(mainRenderer);
+}
 
 
 

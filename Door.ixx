@@ -15,45 +15,45 @@ export enum class GamePhase {
 
 export class Door {
 
-private:
-	bool isWinner;
-	bool isOpen;
-	bool isChosen;
+	private:
+		bool isWinner;
+		bool isOpen;
+		bool isChosen;
 
-public:
-	Door() {
-		isWinner = false;
-		isOpen = false;
-		isChosen = false;
-	}
+	public:
+		Door() {
+			isWinner = false;
+			isOpen = false;
+			isChosen = false;
+		}
 
-	void open() {
-		isOpen = true;
-	}
+		void open() {
+			isOpen = true;
+		}
 
-	void setWinner() {
-		isWinner = true;
-	}
+		void setWinner() {
+			isWinner = true;
+		}
 
-	void choose() {
-		isChosen = true;
-	}
+		void choose() {
+			isChosen = true;
+		}
 
-	void unchoose() {
-		isChosen = false;
-	}
+		void unchoose() {
+			isChosen = false;
+		}
 
-	bool getWinner() {
-		return isWinner;
-	}
+		bool getWinner() {
+			return isWinner;
+		}
 
-	bool getOpen() {
-		return isOpen;
-	}
+		bool getOpen() {
+			return isOpen;
+		}
 
-	bool getChosen() {
-		return isChosen;
-	}
+		bool getChosen() {
+			return isChosen;
+		}
 };
 
 export class GameState {
@@ -131,6 +131,9 @@ export class GameState {
 		}
 
 		void chooseDoor(int chosenDoorIndex) {
+			for (int i = 0; i < 3; ++i) {
+				doors[i].unchoose();
+			}
 			doors[chosenDoorIndex].choose();
 			gamePhase = GamePhase::chooseSwitch;
 		}
