@@ -96,6 +96,8 @@ SDL_Rect doorRects[3];
 
 SDL_Surface* doorSurface = NULL;
 SDL_Texture* doorTexture = NULL;
+SDL_Surface* openDoorSurface = NULL;
+SDL_Texture* openDoorTexture = NULL;
 
 SDL_Window* mainWindow = NULL;
 SDL_Renderer* mainRenderer = NULL;
@@ -123,7 +125,6 @@ int main(int argc, char* args[]) {
 
 	gameState = GameState();
 
-	cout << "why won't the following line work?\n";
 	cout << "Number of Doors:\n";
 	cout << gameState.getDoors().size();
 	cout << '\n';
@@ -147,18 +148,6 @@ int main(int argc, char* args[]) {
 	Uint32 frameStartTime; // Tick count when this particular frame began
 	int frameTimeElapsed; // how much time has elapsed during this frame
 
-	// ONCE THIS WORKS declare all the variables as NULL and then do NULL checks to cancel out in case of errors.
-	mainWindow = SDL_CreateWindow("Main Window", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
-	mainRenderer = SDL_CreateRenderer(mainWindow, -1, SDL_RENDERER_ACCELERATED);
-	mainWindowSurface = SDL_GetWindowSurface(mainWindow);
-
-	// Door Stuff
-	doorSurface = IMG_Load("assets/door_400_400.png");
-	doorTexture = SDL_CreateTextureFromSurface(mainRenderer, doorSurface);
-
-	doorRects[0] = { getDoorHorizontalPosition(0), DOOR_Y_POSITION, DOOR_WIDTH, DOOR_HEIGHT };
-	doorRects[1] = { getDoorHorizontalPosition(1), DOOR_Y_POSITION, DOOR_WIDTH, DOOR_HEIGHT };
-	doorRects[2] = { getDoorHorizontalPosition(2), DOOR_Y_POSITION, DOOR_WIDTH, DOOR_HEIGHT };
 
 	// title font stuff
 	titleTextRect = { PADDING, PADDING, SCREEN_WIDTH - (PADDING * 2), 55 };
@@ -208,27 +197,77 @@ int main(int argc, char* args[]) {
 }
 
 bool initializeSDL2() {
-	bool success = true;
 	// Initialize SDL
 	if (SDL_Init(SDL_INIT_VIDEO) < 0) {
+		SDL_Log("SDL failed to initialize. SDL_Error: %s\n", SDL_GetError());
 		std::cerr << "SDL failed to initialize. SDL_Error: " << SDL_GetError() << std::endl;
-		success = false;
+		return false;
 	}
 
 	// Initialize TTF
 	if (TTF_Init() == -1) {
+		SDL_Log("WTTF failed to initialize. TTF_Error: %s\n", TTF_GetError());
 		std::cerr << "TTF failed to initialize. TTF_Error: " << TTF_GetError() << std::endl;
-		success = false;
+		return false;
 	}
 
 	font = TTF_OpenFont("assets/Crang.ttf", 28);
 
 	if (!font) {
+		SDL_Log("Font failed to load. TTF_Error: %s\n", TTF_GetError());
 		std::cerr << "Font failed to load. TTF_Error: " << TTF_GetError() << std::endl;
-		success = false;
+		return false;
 	}
 
-	return success;
+	// Load main window, surface, and renderer
+	mainWindow = SDL_CreateWindow("Main Window", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
+
+	if (!mainWindow) {
+		SDL_Log("Window failed to load. SDL_Error: %s\n", SDL_GetError());
+		std::cerr << "Window failed to load. SDL_Error: " << SDL_GetError() << std::endl;
+		return false;
+	}
+
+	mainRenderer = SDL_CreateRenderer(mainWindow, -1, SDL_RENDERER_ACCELERATED);
+
+	if (!mainRenderer) {
+		SDL_Log("Renderer failed to load. SDL_Error: %s\n", SDL_GetError());
+		std::cerr << "Renderer failed to load. SDL_Error: " << SDL_GetError() << std::endl;
+		return false;
+	}
+
+	mainWindowSurface = SDL_GetWindowSurface(mainWindow);
+
+	if (!mainWindowSurface) {
+		SDL_Log("Window Surface failed to load. SDL_Error: %s\n", SDL_GetError());
+		std::cerr << "Window Surface failed to load. SDL_Error: " << SDL_GetError() << std::endl;
+		return false;
+	}
+
+	// Door Stuff
+	doorSurface = IMG_Load("assets/door_400_400.png");
+
+	if (!doorSurface) {
+		std::cerr << "Image failed to load. SDL_image: " << IMG_GetError() << std::endl;
+		return false;
+	}
+
+	openDoorSurface = IMG_Load("assets/open_door_400_400.png");
+
+	if (!openDoorSurface) {
+		std::cerr << "Image failed to load. SDL_image: " << IMG_GetError() << std::endl;
+		return false;
+	}
+
+	doorTexture = SDL_CreateTextureFromSurface(mainRenderer, doorSurface);
+	openDoorTexture = SDL_CreateTextureFromSurface(mainRenderer, doorSurface);
+
+	// Door rectangles
+	doorRects[0] = { getDoorHorizontalPosition(0), DOOR_Y_POSITION, DOOR_WIDTH, DOOR_HEIGHT };
+	doorRects[1] = { getDoorHorizontalPosition(1), DOOR_Y_POSITION, DOOR_WIDTH, DOOR_HEIGHT };
+	doorRects[2] = { getDoorHorizontalPosition(2), DOOR_Y_POSITION, DOOR_WIDTH, DOOR_HEIGHT };
+
+	return true;
 }
 
 
@@ -255,15 +294,17 @@ void handleClick(SDL_Event* e) {
 		for (int i = 0; i < 3; ++i) {
 			if (x >= doorRects[i].x && x < (doorRects[i].x + DOOR_WIDTH)) {
 				cout << "\n HIT DOOR " + std::to_string(i + 1) + '\n';
-				gameState.chooseDoor(i);
-				// Set the draw color (RGBA)
-				SDL_SetRenderDrawColor(mainRenderer, 30, 134, 214, 1);
-				SDL_RenderFillRect(mainRenderer, &doorRects[i]);
+
+				if (gameState.getGamePhase() == GamePhase::chooseDoor) {
+					gameState.chooseDoor(i);
+					// Set the draw color (RGBA)
+					SDL_SetRenderDrawColor(mainRenderer, 30, 134, 214, 1);
+					SDL_RenderFillRect(mainRenderer, &doorRects[i]);
+				}				
 			}
 		}
 	}
 }
-
 
 
 
@@ -273,7 +314,8 @@ void draw() {
 	SDL_RenderClear(mainRenderer);
 
 	std::string titleText = "Monty Hall Problem";
-	SDL_Surface* titleTextSurface = TTF_RenderText_Solid(font, titleText.c_str(), textColor);
+	//SDL_Surface* titleTextSurface = TTF_RenderText_Solid(font, titleText.c_str(), textColor);
+	SDL_Surface* titleTextSurface = TTF_RenderText_Blended(font, titleText.c_str(), textColor);
 	// Create texture from surface pixels
 	titleTextTexture = SDL_CreateTextureFromSurface(mainRenderer, titleTextSurface);
 
