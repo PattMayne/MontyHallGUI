@@ -82,6 +82,7 @@ const int PADDING = 20;
 const int DOOR_WIDTH = (SCREEN_WIDTH - (PADDING * 4)) / 3;
 const int DOOR_HEIGHT = DOOR_WIDTH;
 const int DOOR_Y_POSITION = DOOR_HEIGHT;
+const int TEXT_HEIGHT = 54;
 
 const string loserText = "LOSER";
 const string winnerText = "WINNER!";
@@ -97,6 +98,7 @@ void draw();
 
 // 3 rectangles to display the door
 SDL_Rect doorRects[3];
+SDL_Rect doorTextRects[3];
 
 SDL_Surface* doorSurface = NULL;
 SDL_Texture* doorTexture = NULL;
@@ -156,7 +158,7 @@ int main(int argc, char* args[]) {
 
 
 	// title font stuff
-	titleTextRect = { PADDING, PADDING, SCREEN_WIDTH - (PADDING * 2), 55 };
+	titleTextRect = { PADDING, PADDING, SCREEN_WIDTH - (PADDING * 2), TEXT_HEIGHT };
 	
 	// Draw once before the loop starts
 	draw();
@@ -266,10 +268,16 @@ bool initializeSDL2() {
 	doorTexture = SDL_CreateTextureFromSurface(mainRenderer, doorSurface);
 	openDoorTexture = SDL_CreateTextureFromSurface(mainRenderer, openDoorSurface);
 
-	// Door rectangles
-	doorRects[0] = { getDoorHorizontalPosition(0), DOOR_Y_POSITION, DOOR_WIDTH, DOOR_HEIGHT };
-	doorRects[1] = { getDoorHorizontalPosition(1), DOOR_Y_POSITION, DOOR_WIDTH, DOOR_HEIGHT };
-	doorRects[2] = { getDoorHorizontalPosition(2), DOOR_Y_POSITION, DOOR_WIDTH, DOOR_HEIGHT };
+	// Door rectangles AND door text rectangles
+	for (int i = 0; i < 3; ++i) {
+		doorRects[i] = { getDoorHorizontalPosition(i), DOOR_Y_POSITION, DOOR_WIDTH, DOOR_HEIGHT };
+		doorTextRects[i] = {
+			getDoorHorizontalPosition(i) + PADDING,
+			(DOOR_Y_POSITION + (DOOR_HEIGHT / 2)) - (TEXT_HEIGHT / 2),
+			DOOR_WIDTH - (PADDING * 2),
+			TEXT_HEIGHT
+		};
+	}
 
 	// create text textures
 	// create surfaces first (dies with scope) and then create textures from surface pixels
@@ -337,21 +345,31 @@ void draw() {
 	SDL_SetRenderDrawColor(mainRenderer, 0xFF, 0xFF, 0xFF, 0xFF);
 	SDL_RenderClear(mainRenderer);
 
-	// Draw colored rectangles behind certain doors (open doors or chosen door)
-	for (int i = 0; i < 3; ++i) {
-		vector<Door> doors = gameState.getDoors();
+	vector<Door> doors = gameState.getDoors();
+
+	for (int i = 0; i < doors.size(); ++i) {
+
+		// Draw colored rectangles behind certain doors (open doors or chosen door)		
 		if (doors[i].getChosen()) {
 			SDL_SetRenderDrawColor(mainRenderer, 30, 134, 214, 1);
 			SDL_RenderFillRect(mainRenderer, &doorRects[i]);
 		} else if (doors[i].getOpen() && !doors[i].getWinner()) {
 			SDL_SetRenderDrawColor(mainRenderer, 220, 34, 34, 1);
 			SDL_RenderFillRect(mainRenderer, &doorRects[i]);
-			// Draw "LOSER"
 		}
-	}
 
-	// draw the doors
-	for (int i = 0; i < 3; ++i) {
+		// draw WINNER or LOSER:
+		SDL_RenderCopyEx(
+			mainRenderer,
+			doors[i].getWinner() ? winnerTextTexture : loserTextTexture,
+			NULL,
+			&doorTextRects[i],
+			0,
+			NULL,
+			SDL_FLIP_NONE
+		);
+
+		// draw the doors
 		SDL_RenderCopyEx(
 			mainRenderer,
 			gameState.getDoors()[i].getOpen() ? openDoorTexture : doorTexture,
@@ -359,9 +377,12 @@ void draw() {
 			&doorRects[i],
 			0,
 			NULL,
-			SDL_FLIP_NONE);
+			SDL_FLIP_NONE
+		);
 	}
 	
+	//	doorTextRects
+
 	// draw title
 	SDL_RenderCopyEx(mainRenderer, titleTextTexture, NULL, &titleTextRect, 0, NULL, SDL_FLIP_NONE);
 
