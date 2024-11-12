@@ -160,7 +160,7 @@ export class GameState {
 			openOneLosingDoor();
 		}
 
-		int getYesSwitchWIns() {
+		int getYesSwitchWins() {
 			return yesSwitchWins;
 		}
 

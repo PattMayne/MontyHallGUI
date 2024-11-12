@@ -83,11 +83,17 @@ const int DOOR_WIDTH = (SCREEN_WIDTH - (PADDING * 4)) / 3;
 const int DOOR_HEIGHT = DOOR_WIDTH;
 const int DOOR_Y_POSITION = DOOR_HEIGHT * 1.25;
 const int TEXT_HEIGHT = 54;
+const int STATS_TEXT_HEIGHT = 34;
 
 const string loserText = "LOSER";
 const string winnerText = "WINNER!";
 const string titleText = "Monty Hall Problem";
 const string mysteryText = "  ?  ";
+
+string yesWinsText = "";
+string yesLossesText = "";
+string noWinsText = "";
+string noLossesText = "";
 
 void exit(SDL_Surface* surface, SDL_Window* window);
 
@@ -95,6 +101,7 @@ int getDoorHorizontalPosition(int doorIndex);
 void handleClick(SDL_Event* e);
 bool initializeSDL2();
 void draw();
+void setWinsAndLossesTextures();
 
 // 3 rectangles to display the door
 SDL_Rect doorRects[3];
@@ -118,6 +125,17 @@ SDL_Texture* titleTextTexture = NULL;
 SDL_Texture* loserTextTexture = NULL;
 SDL_Texture* winnerTextTexture = NULL;
 SDL_Texture* mysteryTextTexture = NULL;
+
+// Update these (stats) after every GAME (win or loss)
+SDL_Texture* yesWinsTextTexture = NULL;
+SDL_Texture* yesLossesTextTexture = NULL;
+SDL_Texture* noWinsTextTexture = NULL;
+SDL_Texture* noLossesTextTexture = NULL;
+
+SDL_Rect yesWinsTextRect;
+SDL_Rect yesLossesTextRect;
+SDL_Rect noWinsTextRect;
+SDL_Rect noLossesTextRect;
 
 GameState gameState;
 
@@ -158,10 +176,6 @@ int main(int argc, char* args[]) {
 	Uint32 frameStartTime; // Tick count when this particular frame began
 	int frameTimeElapsed; // how much time has elapsed during this frame
 
-
-	// title font stuff
-	titleTextRect = { PADDING, PADDING, SCREEN_WIDTH - (PADDING * 2), TEXT_HEIGHT };
-	
 	// Draw once before the loop starts
 	draw();
 
@@ -270,6 +284,8 @@ bool initializeSDL2() {
 	doorTexture = SDL_CreateTextureFromSurface(mainRenderer, doorSurface);
 	openDoorTexture = SDL_CreateTextureFromSurface(mainRenderer, openDoorSurface);
 
+	// Creating Rects
+
 	// Door rectangles AND door text rectangles
 	for (int i = 0; i < 3; ++i) {
 		doorRects[i] = { getDoorHorizontalPosition(i), DOOR_Y_POSITION, DOOR_WIDTH, DOOR_HEIGHT };
@@ -280,6 +296,20 @@ bool initializeSDL2() {
 			TEXT_HEIGHT
 		};
 	}
+
+	titleTextRect = { PADDING, PADDING, SCREEN_WIDTH - (PADDING * 2), TEXT_HEIGHT };
+
+	// STATS rects (stats textures must be rebuilt after every game, so they get their own function).
+	//top left (of stats area)
+	yesWinsTextRect = { PADDING, (PADDING * 3) + TEXT_HEIGHT, (SCREEN_WIDTH / 2) - (PADDING * 2), STATS_TEXT_HEIGHT };
+	// top right
+	noWinsTextRect = { PADDING, (PADDING * 3) + (TEXT_HEIGHT * 2), (SCREEN_WIDTH / 2) - (PADDING * 2), STATS_TEXT_HEIGHT };
+	// bottom left
+	yesLossesTextRect = { PADDING + (SCREEN_WIDTH / 2), (PADDING * 3) + TEXT_HEIGHT, (SCREEN_WIDTH / 2) - (PADDING * 2), STATS_TEXT_HEIGHT };
+	// bottom right
+	noLossesTextRect = { PADDING + (SCREEN_WIDTH / 2), (PADDING * 3) + (TEXT_HEIGHT * 2), (SCREEN_WIDTH / 2) - (PADDING * 2), STATS_TEXT_HEIGHT };
+
+	setWinsAndLossesTextures();
 
 	// create text textures
 	// create surfaces first (dies with scope) and then create textures from surface pixels
@@ -299,6 +329,7 @@ bool initializeSDL2() {
 	SDL_FreeSurface(titleTextSurface);
 	SDL_FreeSurface(loserTextSurface);
 	SDL_FreeSurface(winnerTextSurface);
+	SDL_FreeSurface(mysteryTextSurface);
 
 	return true;
 }
@@ -338,7 +369,6 @@ void handleClick(SDL_Event* e) {
 		}
 	}
 }
-
 
 
 void draw() {
@@ -386,7 +416,6 @@ void draw() {
 		);
 
 		// draw question marks on unopened doors IF it's the "should I switch" phase.
-
 		if (gameState.getGamePhase() == GamePhase::chooseSwitch && !doors[i].getOpen()) {
 			SDL_RenderCopyEx(
 				mainRenderer,
@@ -400,7 +429,11 @@ void draw() {
 		}
 	}
 	
-	//	doorTextRects
+	// draw stats
+	SDL_RenderCopyEx(mainRenderer, yesWinsTextTexture, NULL, &yesWinsTextRect, 0, NULL, SDL_FLIP_NONE);
+	SDL_RenderCopyEx(mainRenderer, noWinsTextTexture, NULL, &noWinsTextRect, 0, NULL, SDL_FLIP_NONE);
+	SDL_RenderCopyEx(mainRenderer, yesLossesTextTexture, NULL, &yesLossesTextRect, 0, NULL, SDL_FLIP_NONE);
+	SDL_RenderCopyEx(mainRenderer, noLossesTextTexture, NULL, &noLossesTextRect, 0, NULL, SDL_FLIP_NONE);
 
 	// draw title
 	SDL_RenderCopyEx(mainRenderer, titleTextTexture, NULL, &titleTextRect, 0, NULL, SDL_FLIP_NONE);
@@ -409,7 +442,41 @@ void draw() {
 	SDL_RenderPresent(mainRenderer);
 }
 
+string getThreeDigitCountString(int count) {
+	string countString = to_string(count);
+	while (countString.size() < 3) {
+		countString = "0" + countString;
+	}
+	return countString;
+}
 
+
+void setWinsAndLossesTextures() {
+
+	yesWinsText = "SWITCH WINS:              " + getThreeDigitCountString(gameState.getYesSwitchWins());
+	noWinsText = "NON-SWITCH WINS:    " + getThreeDigitCountString(gameState.getNoSwitchWins());
+	yesLossesText = "SWITCH LOSSES:           " + getThreeDigitCountString(gameState.getYesSwitchLosses());
+	noLossesText = "NON-SWITCH LOSSES:  " + getThreeDigitCountString(gameState.getNoSwitchLosses());
+
+	SDL_Surface* yesWinsTextSurface = TTF_RenderText_Blended(font, yesWinsText.c_str(), textColor);
+	yesWinsTextTexture = SDL_CreateTextureFromSurface(mainRenderer, yesWinsTextSurface);
+
+	SDL_Surface* noWinsTextSurface = TTF_RenderText_Blended(font, noWinsText.c_str(), textColor);
+	noWinsTextTexture = SDL_CreateTextureFromSurface(mainRenderer, noWinsTextSurface);
+
+	SDL_Surface* yesLossesTextSurface = TTF_RenderText_Blended(font, yesLossesText.c_str(), textColor);
+	yesLossesTextTexture = SDL_CreateTextureFromSurface(mainRenderer, yesLossesTextSurface);
+
+	SDL_Surface* noLossesTextSurface = TTF_RenderText_Blended(font, noLossesText.c_str(), textColor);
+	noLossesTextTexture = SDL_CreateTextureFromSurface(mainRenderer, noLossesTextSurface);
+
+	// Free the surface after creating the texture
+	SDL_FreeSurface(yesWinsTextSurface);
+	SDL_FreeSurface(noWinsTextSurface);
+	SDL_FreeSurface(yesLossesTextSurface);
+	SDL_FreeSurface(noLossesTextSurface);
+
+}
 
 
 int getDoorHorizontalPosition(int doorIndex) {
