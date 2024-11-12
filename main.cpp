@@ -48,8 +48,8 @@
 * NEXT:
 *	- Print instructions
 *		- The instructions should be able to CHANGE over time.
-*	- Print stats
-*	- It should print EVERYTHING each time, but EVERYTHING should be based on state. (don't just print once and leave it until there's a change).
+*	- Print stats (print STATE)
+*		- It should print EVERYTHING each time something CHANGES, but EVERYTHING should be based on state. (don't just print once and leave it until there's a change).
 *
 *
 */
@@ -66,13 +66,14 @@
 #include<cstdlib>
 #include <time.h>
 
-import Door;
+import GameState;
 
 using std::string;
 using std::cout;
 using std::cin;
 using std::vector;
 using std::to_string;
+
 
 // global constants
 const int SCREEN_WIDTH = 640;
@@ -102,14 +103,7 @@ SDL_Color textColor = { 50, 50, 50 };
 SDL_Rect titleTextRect;
 SDL_Texture* titleTextTexture = NULL;
 
-// game state stuff
-
-enum class GamePhase {
-	uninitialized, chooseDoor, chooseSwitch, gameOver
-};
-
-GamePhase gameState = GamePhase::uninitialized;
-
+GameState gameState;
 
 
 int main(int argc, char* args[]) {
@@ -123,22 +117,25 @@ int main(int argc, char* args[]) {
 		return -1;
 	}
 
+	gameState = GameState();
+
+	cout << "why won't the following line work?\n";
+	cout << "Number of Doors:\n";
+	cout << gameState.getDoors().size();
+	cout << '\n';
+
+	cout << "Winning Door Index:\n";
+	cout << gameState.getWinningDoorIndex();
+	cout << '\n';
+
 	// Some of this shoulf go in startGame function
 	// And there should be a GameState SINGLETON so I don't have to pass all these variables into the "startGame" function
 	// It can be one global SINGLETON
 
-	gameState = GamePhase::chooseDoor;
 
-	// These can ONLY increment... and so they'll be encapsulated within the singleton, with no option of decrement or resetting!
-	int yesSwitchWins = 0;
-	int yesSwitchLosses = 0;
-	int noSwitchWins = 0;
-	int noSwitchLosses = 0;
-
-
-	// Create three doors
-	vector<Door> doors{ Door(), Door(), Door() };
-	srand(time(0)); // This guarantees a NEW random number each time the rand() program runs
+	// Create three doors // NO... the doors will be in GameState
+	//vector<Door> doors{ Door(), Door(), Door() };
+	//srand(time(0)); // This guarantees a NEW random number each time the rand() program runs
 
 	// Timeout data
 	const int TARGET_FPS = 60;
