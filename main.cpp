@@ -119,7 +119,7 @@ SDL_Surface* mainWindowSurface = NULL;
 
 // font stuff
 TTF_Font* font = NULL;
-SDL_Color textColor = { 50, 50, 50 };
+SDL_Color textColor = { 25, 25, 25 };
 SDL_Color mysteryTextColor = { 250, 250, 50 };
 SDL_Rect titleTextRect;
 SDL_Texture* titleTextTexture = NULL;
@@ -318,9 +318,9 @@ bool initializeSDL2() {
 	for (int i = 0; i < 3; ++i) {
 		doorRects[i] = { getDoorHorizontalPosition(i), DOOR_Y_POSITION, DOOR_WIDTH, DOOR_HEIGHT };
 		doorTextRects[i] = {
-			getDoorHorizontalPosition(i) + PADDING,
+			getDoorHorizontalPosition(i) + ((PADDING * 3) / 2),
 			(DOOR_Y_POSITION + (DOOR_HEIGHT / 2)) - (TEXT_HEIGHT / 2),
-			DOOR_WIDTH - (PADDING * 2),
+			DOOR_WIDTH - (PADDING * 3),
 			TEXT_HEIGHT
 		};
 	}
@@ -451,11 +451,7 @@ void handleClick(SDL_Event* e) {
 
 void draw() {
 	// Clear window if user input happened
-	SDL_SetRenderDrawColor(mainRenderer, 0xFF, 0xFF, 0xFF, 0xFF);
-	SDL_RenderClear(mainRenderer);
-
-	// paint it white first (put this in a function later to avoid repeating the code during the game loop)
-	SDL_SetRenderDrawColor(mainRenderer, 0xFF, 0xFF, 0xFF, 0xFF);
+	SDL_SetRenderDrawColor(mainRenderer, 104, 104, 104, 1);
 	SDL_RenderClear(mainRenderer);
 
 	vector<Door> doors = gameState.getDoors();
@@ -464,7 +460,8 @@ void draw() {
 
 		// Draw colored rectangles behind certain doors (open doors or chosen door)		
 		if (doors[i].getChosen()) {
-			SDL_SetRenderDrawColor(mainRenderer, 30, 134, 214, 1);
+			// blue
+			SDL_SetRenderDrawColor(mainRenderer, 70, 40, 200, 1);
 			SDL_RenderFillRect(mainRenderer, &doorRects[i]);
 		} else if (doors[i].getOpen() && !doors[i].getWinner()) {
 			SDL_SetRenderDrawColor(mainRenderer, 220, 34, 34, 1);
