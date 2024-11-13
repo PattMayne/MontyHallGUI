@@ -612,6 +612,7 @@ string getThreeDigitCountString(int count) {
 
 void setWinsAndLossesTextures() {
 
+	// Adding extra spaces to keep characters from stretching.
 	yesWinsText = "SWITCH WINS:              " + getThreeDigitCountString(gameState.getYesSwitchWins());
 	noWinsText = "NON-SWITCH WINS:    " + getThreeDigitCountString(gameState.getNoSwitchWins());
 	yesLossesText = "SWITCH LOSSES:           " + getThreeDigitCountString(gameState.getYesSwitchLosses());
@@ -634,7 +635,6 @@ void setWinsAndLossesTextures() {
 	SDL_FreeSurface(noWinsTextSurface);
 	SDL_FreeSurface(yesLossesTextSurface);
 	SDL_FreeSurface(noLossesTextSurface);
-
 }
 
 
