@@ -11,6 +11,7 @@
 *		- New buttons "switch" and "don't switch"
 *		- Load functions from console-based game
 *		- Stats on TOP BAR (total wins / Total YES wins / Total NO wins )
+*		- Remove double padding between elements
 *
 *
 * IMAGE is simply an image loaded onto a SURFACE!
@@ -66,6 +67,8 @@
 #include<cstdlib>
 #include <time.h>
 
+const bool DEBUG = true;
+
 import GameState;
 
 using std::string;
@@ -93,7 +96,9 @@ const string winnerText = "WINNER!";
 const string titleText = "Monty Hall Problem";
 const string mysteryText = "  ?  ";
 
-const string switchQuestionText = "Switch selected door?";
+const string chooseDoorText = "Choose a door!";
+
+const string switchQuestionText = "Switch doors?";
 const string switchButtonYesText = "YES";
 const string switchButtonNoText = "NO";
 
@@ -139,6 +144,7 @@ SDL_Texture* switchButtonNoTexture;
 SDL_Texture* switchButtonNoTextTexture;
 
 SDL_Texture* switchQuestionTextTexture;
+SDL_Texture* chooseDoorTextTexture;
 
 
 // Rectangles
@@ -160,12 +166,12 @@ SDL_Rect switchButtonNoRect;
 SDL_Rect switchButtonNoTextRect;
 
 SDL_Rect switchQuestionTextRect;
-
-// Instructions rectangle
-SDL_Rect instructionsRect;
+SDL_Rect chooseDoorRect;
 
 
 GameState gameState;
+
+void printXY(int x, int y);
 
 
 int main(int argc, char* args[]) {
@@ -228,7 +234,6 @@ int main(int argc, char* args[]) {
 				running = false;
 			}
 			else if (e.type == SDL_MOUSEBUTTONDOWN) {
-
 				handleClick(&e);
 				draw();
 			}
@@ -246,6 +251,7 @@ int main(int argc, char* args[]) {
 	return 0;
 }
 
+// Load the SDL libraries, plus the main textures and rectangles
 bool initializeSDL2() {
 	// Initialize SDL
 	if (SDL_Init(SDL_INIT_VIDEO) < 0) {
@@ -345,6 +351,13 @@ bool initializeSDL2() {
 		TEXT_HEIGHT
 	};
 
+	chooseDoorRect = {
+		PADDING,
+		DOOR_Y_POSITION + DOOR_HEIGHT + PADDING,
+		(SCREEN_WIDTH / 2) - (PADDING * 2),
+		TEXT_HEIGHT
+	};
+
 	switchButtonYesRect = {
 		(SCREEN_WIDTH / 2) + PADDING,
 		switchQuestionTextRect.y,
@@ -389,8 +402,7 @@ bool initializeSDL2() {
 	SDL_Surface* mysteryTextSurface = TTF_RenderText_Blended(font, mysteryText.c_str(), mysteryTextColor);
 	mysteryTextTexture = SDL_CreateTextureFromSurface(mainRenderer, mysteryTextSurface);
 
-	// make switch question & button surfaces
-
+	// make switch question & button surfaces & textures (and other instruction surfaces and textures)
 	SDL_Surface* switchButtonYesTextSurface = TTF_RenderText_Blended(font, switchButtonYesText.c_str(), textColor);
 	switchButtonYesTextTexture = SDL_CreateTextureFromSurface(mainRenderer, switchButtonYesTextSurface);
 
@@ -400,6 +412,9 @@ bool initializeSDL2() {
 	SDL_Surface* switchQuestionSurface = TTF_RenderText_Blended(font, switchQuestionText.c_str(), textColor);
 	switchQuestionTextTexture = SDL_CreateTextureFromSurface(mainRenderer, switchQuestionSurface);
 
+	SDL_Surface* chooseDoorSurface = TTF_RenderText_Blended(font, chooseDoorText.c_str(), textColor);
+	chooseDoorTextTexture = SDL_CreateTextureFromSurface(mainRenderer, chooseDoorSurface);
+
 	// Free the surface after creating the texture
 	SDL_FreeSurface(titleTextSurface);
 	SDL_FreeSurface(loserTextSurface);
@@ -408,6 +423,7 @@ bool initializeSDL2() {
 	SDL_FreeSurface(switchButtonYesTextSurface);
 	SDL_FreeSurface(switchButtonNoTextSurface);
 	SDL_FreeSurface(switchQuestionSurface);
+	SDL_FreeSurface(chooseDoorSurface);
 
 	return true;
 }
@@ -419,31 +435,52 @@ void handleClick(SDL_Event* e) {
 	int x, y;
 	SDL_GetMouseState(&x, &y);
 
-	// display the info (delete later)
-	cout << "\n\nMouse clicked";
-	string xString = "\nX: " + std::to_string(x);
-	string yString = "\nY: " + std::to_string(y);
-	string printString = yString + xString;
-	cout << printString;
+	if (DEBUG) {
+		printXY(x, y);
+	}
 
-	// see if it hit a button:
+	// see if it hit a button. Check game phase first, then check if ACTIVE buttons have been pressed.
+	if (gameState.getGamePhase() == GamePhase::chooseDoor) {
+		if (y >= DOOR_Y_POSITION && y < DOOR_Y_POSITION + DOOR_HEIGHT) {
+			cout << "\n\n CLICKED INSIDE THE BUTTON PLACE";
 
-	if (y >= DOOR_Y_POSITION && y < DOOR_Y_POSITION + DOOR_HEIGHT) {
-		cout << "\n\n CLICKED INSIDE THE BUTTON PLACE";
+			// run through the doors and check it against their x/y
+			for (int i = 0; i < 3; ++i) {
+				if (x >= doorRects[i].x && x < (doorRects[i].x + DOOR_WIDTH)) {
+					//cout << "\n HIT DOOR " + std::to_string(i + 1) + '\n';
 
-		// run through the doors and check it against their x/y
-
-		for (int i = 0; i < 3; ++i) {
-			if (x >= doorRects[i].x && x < (doorRects[i].x + DOOR_WIDTH)) {
-				cout << "\n HIT DOOR " + std::to_string(i + 1) + '\n';
-
-				if (gameState.getGamePhase() == GamePhase::chooseDoor) {
 					gameState.chooseDoor(i);
 					// Set the draw color (RGBA)
 					SDL_SetRenderDrawColor(mainRenderer, 30, 134, 214, 1);
 					SDL_RenderFillRect(mainRenderer, &doorRects[i]);
-				}			
+
+				}
 			}
+		}
+	} else if(gameState.getGamePhase() == GamePhase::chooseSwitch) {
+		if (
+			// clicked YES button
+			y >= switchButtonYesRect.y &&
+			y <= switchButtonYesRect.y + switchButtonYesRect.h &&
+			x >= switchButtonYesRect.x &&
+			x <= switchButtonYesRect.x + switchButtonYesRect.w) {
+			cout << "\nCLICKED YES!!!\n";
+
+			// switch doors (function in GameState class)
+			// open all dooes
+			// show win/loss
+
+		} else if (
+			// clicked NO button
+			y >= switchButtonNoRect.y &&
+			y <= switchButtonNoRect.y + switchButtonNoRect.h &&
+			x >= switchButtonNoRect.x &&
+			x <= switchButtonNoRect.x + switchButtonNoRect.w) {
+			cout << "\nCLICKED NO!!!\n";
+
+			// open all dooes
+			// show win/loss
+			
 		}
 	}
 }
@@ -456,6 +493,7 @@ void draw() {
 
 	vector<Door> doors = gameState.getDoors();
 
+	// For each door, draw their backgrounds, text,  the door image, and the question marks (where appropriate)
 	for (int i = 0; i < doors.size(); ++i) {
 
 		// Draw colored rectangles behind certain doors (open doors or chosen door)		
@@ -503,18 +541,21 @@ void draw() {
 			);
 		}
 	}
+	if (gameState.getGamePhase() == GamePhase::chooseDoor) {
+		SDL_RenderCopyEx(mainRenderer, chooseDoorTextTexture, NULL, &chooseDoorRect, 0, NULL, SDL_FLIP_NONE);
+	}
+	else if (gameState.getGamePhase() == GamePhase::chooseSwitch) {
+		// Draw switch question items
+		SDL_SetRenderDrawColor(mainRenderer, 255, 141, 0, 1);
+		SDL_RenderFillRect(mainRenderer, &switchButtonYesRect);
+		SDL_RenderFillRect(mainRenderer, &switchButtonNoRect);
 
-	// Draw switch question items (put in conditional statement later)
+		SDL_RenderCopyEx(mainRenderer, switchQuestionTextTexture, NULL, &switchQuestionTextRect, 0, NULL, SDL_FLIP_NONE);
+		SDL_RenderCopyEx(mainRenderer, switchButtonYesTextTexture, NULL, &switchButtonYesTextRect, 0, NULL, SDL_FLIP_NONE);
+		SDL_RenderCopyEx(mainRenderer, switchButtonNoTextTexture, NULL, &switchButtonNoTextRect, 0, NULL, SDL_FLIP_NONE);
+	}
 
-	SDL_SetRenderDrawColor(mainRenderer, 255, 141, 0, 1);
-	SDL_RenderFillRect(mainRenderer, &switchButtonYesRect);
-	SDL_RenderFillRect(mainRenderer, &switchButtonNoRect);
 
-	SDL_RenderCopyEx(mainRenderer, switchQuestionTextTexture, NULL, &switchQuestionTextRect, 0, NULL, SDL_FLIP_NONE);
-	SDL_RenderCopyEx(mainRenderer, switchButtonYesTextTexture, NULL, &switchButtonYesTextRect, 0, NULL, SDL_FLIP_NONE);
-	SDL_RenderCopyEx(mainRenderer, switchButtonNoTextTexture, NULL, &switchButtonNoTextRect, 0, NULL, SDL_FLIP_NONE);
-
-	
 	// draw stats
 	SDL_RenderCopyEx(mainRenderer, yesWinsTextTexture, NULL, &yesWinsTextRect, 0, NULL, SDL_FLIP_NONE);
 	SDL_RenderCopyEx(mainRenderer, noWinsTextTexture, NULL, &noWinsTextRect, 0, NULL, SDL_FLIP_NONE);
@@ -582,3 +623,13 @@ void exit(SDL_Surface* surface, SDL_Window* window)
 }
 
 
+// DEBUG FUNCTIONS
+
+// display mouse click info
+void printXY(int x, int y) {
+	cout << "\n\nMouse clicked";
+	string xString = "\nX: " + std::to_string(x);
+	string yString = "\nY: " + std::to_string(y);
+	string printString = yString + xString;
+	cout << printString;
+}
