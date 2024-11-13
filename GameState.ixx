@@ -5,6 +5,7 @@ export module GameState;
 #include<cstdlib> // Needed for rand() and srand()
 #include<ctime>   // Needed for time()
 #include<cstdlib>
+#include<iostream>
 
 using namespace std;
 using std::vector;
@@ -12,6 +13,7 @@ using std::vector;
 export enum class GamePhase {
 	chooseDoor, chooseSwitch, gameOver
 };
+
 
 export class Door {
 
@@ -62,7 +64,6 @@ export class Door {
 
 export class GameState {
 	private:
-		//vector<Door> doors{ Door(), Door(), Door() };
 		vector<Door> doors;
 		GamePhase gamePhase;
 
@@ -130,6 +131,44 @@ export class GameState {
 			gamePhase = GamePhase::chooseDoor;
 			doors = { Door(), Door(), Door() };
 			setWinner();
+		}
+
+		int getSwitchableDoorIndex() {
+			for (int i = 0; i < doors.size(); ++i) {
+				if (!doors[i].getChosen() && !doors[i].getOpen()) {
+					return i;
+				}
+			}
+			std::cout << "ERROR: NO adequate door index found";
+			return -1;
+		}
+
+		void switchDoors() {
+			int switchableDoorIndex = getSwitchableDoorIndex();
+			unchooseAllDoors();
+			doors[switchableDoorIndex].choose();
+		}
+
+		void switchedAndWon() {
+			++yesSwitchWins;
+		}
+
+		void switchedAndLost() {
+			++yesSwitchLosses;
+		}
+
+		void heldAndWon() {
+			++noSwitchWins;
+		}
+
+		void heldAndLost() {
+			++noSwitchLosses;
+		}
+
+		void openAllDoors() {
+			for (int i = 0; i < doors.size(); ++i) {
+				doors[i].open();
+			}
 		}
 
 
@@ -200,6 +239,37 @@ export class GameState {
 				}
 			}
 			return -1;
+		}
+
+		bool chooseSwitchAndEndGame(bool userSwitchedDoors) {
+			if (userSwitchedDoors) {
+				switchDoors();
+			}
+
+			// update stats
+
+			bool userIsWinner = getWinningDoorIndex() == getChosenDoorIndex();
+
+			if (userIsWinner) {
+				if (userSwitchedDoors) {
+					switchedAndWon();
+				}
+				else {
+					heldAndWon();
+				}
+			}
+			else {
+				if (userSwitchedDoors) {
+					switchedAndLost();
+				}
+				else {
+					heldAndLost();
+				}
+			}
+
+			openAllDoors();
+			gamePhase = GamePhase::gameOver;
+			return userIsWinner;
 		}
 
 		void resetGame() {

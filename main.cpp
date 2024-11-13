@@ -91,8 +91,8 @@ const int SWITCH_BUTTON_WIDTH = 90;
 const int SWITCH_BUTTON_HEIGHT = 30;
 const int SWITCH_BUTTON_PADDING = 10;
 
-const string loserText = "LOSER";
-const string winnerText = "WINNER!";
+const string loserText = " LOSER";
+const string winnerText = "WINNER";
 const string titleText = "Monty Hall Problem";
 const string mysteryText = "  ?  ";
 
@@ -430,6 +430,7 @@ bool initializeSDL2() {
 	SDL_Surface* switchQuestionSurface = TTF_RenderText_Blended(font, switchQuestionText.c_str(), textColor);
 	switchQuestionTextTexture = SDL_CreateTextureFromSurface(mainRenderer, switchQuestionSurface);
 
+	// instructions will need to be updated, so that texture is created in a function.
 	setInstructionsText(instructionsText);
 
 	// Free the surface after creating the texture
@@ -439,8 +440,7 @@ bool initializeSDL2() {
 	SDL_FreeSurface(mysteryTextSurface);
 	SDL_FreeSurface(switchButtonYesTextSurface);
 	SDL_FreeSurface(switchButtonNoTextSurface);
-	SDL_FreeSurface(switchQuestionSurface);
-	
+	SDL_FreeSurface(switchQuestionSurface);	
 
 	return true;
 }
@@ -475,17 +475,14 @@ void handleClick(SDL_Event* e) {
 			}
 		}
 	} else if(gameState.getGamePhase() == GamePhase::chooseSwitch) {
+		bool userSwitches;;
 		if (
 			// clicked YES button
 			y >= switchButtonYesRect.y &&
 			y <= switchButtonYesRect.y + switchButtonYesRect.h &&
 			x >= switchButtonYesRect.x &&
 			x <= switchButtonYesRect.x + switchButtonYesRect.w) {
-			cout << "\nCLICKED YES!!!\n";
-
-			// switch doors (function in GameState class)
-			// open all dooes
-			// show win/loss
+				userSwitches = true;
 
 		} else if (
 			// clicked NO button
@@ -493,12 +490,15 @@ void handleClick(SDL_Event* e) {
 			y <= switchButtonNoRect.y + switchButtonNoRect.h &&
 			x >= switchButtonNoRect.x &&
 			x <= switchButtonNoRect.x + switchButtonNoRect.w) {
-			cout << "\nCLICKED NO!!!\n";
-
-			// open all dooes
-			// show win/loss
-			
+				userSwitches = false;
 		}
+		bool userWins = gameState.chooseSwitchAndEndGame(userSwitches);
+		string postGameInstructionsText = userWins ? "YOU WON!" : "YOU LOST!";
+		setWinsAndLossesTextures();
+		setInstructionsText(postGameInstructionsText);
+	}
+	else if (gameState.getGamePhase() == GamePhase::gameOver) {
+		// handle click on "reset game" button (doesn't exist yet)
 	}
 }
 
@@ -558,10 +558,8 @@ void draw() {
 			);
 		}
 	}
-	if (gameState.getGamePhase() == GamePhase::chooseDoor) {
-		printInstructions();
-	}
-	else if (gameState.getGamePhase() == GamePhase::chooseSwitch) {
+	printInstructions();
+	if (gameState.getGamePhase() == GamePhase::chooseSwitch) {
 		printInstructions();
 		// Draw switch question items
 		SDL_SetRenderDrawColor(mainRenderer, 255, 141, 0, 1);
@@ -571,6 +569,12 @@ void draw() {
 		SDL_RenderCopyEx(mainRenderer, switchQuestionTextTexture, NULL, &switchQuestionTextRect, 0, NULL, SDL_FLIP_NONE);
 		SDL_RenderCopyEx(mainRenderer, switchButtonYesTextTexture, NULL, &switchButtonYesTextRect, 0, NULL, SDL_FLIP_NONE);
 		SDL_RenderCopyEx(mainRenderer, switchButtonNoTextTexture, NULL, &switchButtonNoTextRect, 0, NULL, SDL_FLIP_NONE);
+	}
+	else if (gameState.getGamePhase() == GamePhase::gameOver) {
+		cout << "\nGAME OVER\n";
+		bool userIsWinner = gameState.getWinningDoorIndex() == gameState.getChosenDoorIndex();
+		string winnerOrLoserText = userIsWinner ? "WINNER!" : "LOSER!";
+		cout << winnerOrLoserText;
 	}
 
 
