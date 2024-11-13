@@ -96,7 +96,7 @@ const string winnerText = "WINNER!";
 const string titleText = "Monty Hall Problem";
 const string mysteryText = "  ?  ";
 
-const string chooseDoorText = "Choose a door!";
+string instructionsText = "Choose a door!";
 
 const string switchQuestionText = "Switch doors?";
 const string switchButtonYesText = "YES";
@@ -114,6 +114,8 @@ void handleClick(SDL_Event* e);
 bool initializeSDL2();
 void draw();
 void setWinsAndLossesTextures();
+void printInstructions();
+void setInstructionsText(string newText);
 
 SDL_Texture* doorTexture = NULL;
 SDL_Texture* openDoorTexture = NULL;
@@ -144,7 +146,7 @@ SDL_Texture* switchButtonNoTexture;
 SDL_Texture* switchButtonNoTextTexture;
 
 SDL_Texture* switchQuestionTextTexture;
-SDL_Texture* chooseDoorTextTexture;
+SDL_Texture* instructionsTextTexture;
 
 
 // Rectangles
@@ -335,25 +337,41 @@ bool initializeSDL2() {
 
 	// STATS rects (stats textures must be rebuilt after every game, so they get their own function).
 	//top left (of stats area)
-	yesWinsTextRect = { PADDING, (PADDING * 3) + TEXT_HEIGHT, (SCREEN_WIDTH / 2) - (PADDING * 2), STATS_TEXT_HEIGHT };
+	yesWinsTextRect = {
+		PADDING,
+		(PADDING * 3) + TEXT_HEIGHT,
+		(SCREEN_WIDTH / 2) - (PADDING * 2),
+		STATS_TEXT_HEIGHT };
 	// top right
-	noWinsTextRect = { PADDING, (PADDING * 3) + (TEXT_HEIGHT * 2), (SCREEN_WIDTH / 2) - (PADDING * 2), STATS_TEXT_HEIGHT };
+	noWinsTextRect = {
+		PADDING,
+		(PADDING * 3) + (TEXT_HEIGHT * 2),
+		(SCREEN_WIDTH / 2) - (PADDING * 2),
+		STATS_TEXT_HEIGHT };
 	// bottom left
-	yesLossesTextRect = { PADDING + (SCREEN_WIDTH / 2), (PADDING * 3) + TEXT_HEIGHT, (SCREEN_WIDTH / 2) - (PADDING * 2), STATS_TEXT_HEIGHT };
+	yesLossesTextRect = {
+		PADDING + (SCREEN_WIDTH / 2),
+		(PADDING * 3) + TEXT_HEIGHT,
+		(SCREEN_WIDTH / 2) - (PADDING * 2),
+		STATS_TEXT_HEIGHT };
 	// bottom right
-	noLossesTextRect = { PADDING + (SCREEN_WIDTH / 2), (PADDING * 3) + (TEXT_HEIGHT * 2), (SCREEN_WIDTH / 2) - (PADDING * 2), STATS_TEXT_HEIGHT };
+	noLossesTextRect = {
+		PADDING + (SCREEN_WIDTH / 2),
+		(PADDING * 3) + (TEXT_HEIGHT * 2),
+		(SCREEN_WIDTH / 2) - (PADDING * 2),
+		STATS_TEXT_HEIGHT };
 
 	// Switch Button Stuff
-	switchQuestionTextRect = {
+	chooseDoorRect = {
 		PADDING,
 		DOOR_Y_POSITION + DOOR_HEIGHT + PADDING,
 		(SCREEN_WIDTH / 2) - (PADDING * 2),
 		TEXT_HEIGHT
 	};
 
-	chooseDoorRect = {
+	switchQuestionTextRect = {
 		PADDING,
-		DOOR_Y_POSITION + DOOR_HEIGHT + PADDING,
+		DOOR_Y_POSITION + DOOR_HEIGHT + PADDING + TEXT_HEIGHT + PADDING,
 		(SCREEN_WIDTH / 2) - (PADDING * 2),
 		TEXT_HEIGHT
 	};
@@ -412,8 +430,7 @@ bool initializeSDL2() {
 	SDL_Surface* switchQuestionSurface = TTF_RenderText_Blended(font, switchQuestionText.c_str(), textColor);
 	switchQuestionTextTexture = SDL_CreateTextureFromSurface(mainRenderer, switchQuestionSurface);
 
-	SDL_Surface* chooseDoorSurface = TTF_RenderText_Blended(font, chooseDoorText.c_str(), textColor);
-	chooseDoorTextTexture = SDL_CreateTextureFromSurface(mainRenderer, chooseDoorSurface);
+	setInstructionsText(instructionsText);
 
 	// Free the surface after creating the texture
 	SDL_FreeSurface(titleTextSurface);
@@ -423,7 +440,7 @@ bool initializeSDL2() {
 	SDL_FreeSurface(switchButtonYesTextSurface);
 	SDL_FreeSurface(switchButtonNoTextSurface);
 	SDL_FreeSurface(switchQuestionSurface);
-	SDL_FreeSurface(chooseDoorSurface);
+	
 
 	return true;
 }
@@ -453,7 +470,7 @@ void handleClick(SDL_Event* e) {
 					// Set the draw color (RGBA)
 					SDL_SetRenderDrawColor(mainRenderer, 30, 134, 214, 1);
 					SDL_RenderFillRect(mainRenderer, &doorRects[i]);
-
+					setInstructionsText("You chose door #" + to_string(i + 1));
 				}
 			}
 		}
@@ -542,9 +559,10 @@ void draw() {
 		}
 	}
 	if (gameState.getGamePhase() == GamePhase::chooseDoor) {
-		SDL_RenderCopyEx(mainRenderer, chooseDoorTextTexture, NULL, &chooseDoorRect, 0, NULL, SDL_FLIP_NONE);
+		printInstructions();
 	}
 	else if (gameState.getGamePhase() == GamePhase::chooseSwitch) {
+		printInstructions();
 		// Draw switch question items
 		SDL_SetRenderDrawColor(mainRenderer, 255, 141, 0, 1);
 		SDL_RenderFillRect(mainRenderer, &switchButtonYesRect);
@@ -567,6 +585,16 @@ void draw() {
 
 	// Update window
 	SDL_RenderPresent(mainRenderer);
+}
+
+void printInstructions() {
+	SDL_RenderCopyEx(mainRenderer, instructionsTextTexture, NULL, &chooseDoorRect, 0, NULL, SDL_FLIP_NONE);
+}
+
+void setInstructionsText(string newText) {
+	SDL_Surface* chooseDoorSurface = TTF_RenderText_Blended(font, newText.c_str(), textColor);
+	instructionsTextTexture = SDL_CreateTextureFromSurface(mainRenderer, chooseDoorSurface);
+	SDL_FreeSurface(chooseDoorSurface);
 }
 
 string getThreeDigitCountString(int count) {
