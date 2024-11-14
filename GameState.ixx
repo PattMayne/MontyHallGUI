@@ -14,7 +14,6 @@ export enum class GamePhase {
 	chooseDoor, chooseSwitch, gameOver
 };
 
-
 export class Door {
 
 	private:
@@ -67,12 +66,14 @@ export class GameState {
 		vector<Door> doors;
 		GamePhase gamePhase;
 
-		// These can ONLY increment... and so they'll be encapsulated within the singleton, with no option of decrement or resetting!
+		// These stats can ONLY increment. They remain persistent across multiple games.
+		// So they'll be encapsulated, with no option of decrement or resetting.
 		int yesSwitchWins;
 		int yesSwitchLosses;
 		int noSwitchWins;
 		int noSwitchLosses;
 
+		// randomly choose one door to be the winner
 		void setWinner() {
 			doors[rand() % 3].setWinner();
 		}
@@ -88,6 +89,8 @@ export class GameState {
 			return losingDoorIndices;
 		}
 
+		// Open one losing door. If there is only one losing door among the unopened doors, open that one.
+		// Otherwise, choose one at random.
 		void openOneLosingDoor() {
 			vector<int> losingDoorIndices = getLosingDoorIndices();
 
@@ -133,6 +136,7 @@ export class GameState {
 			setWinner();
 		}
 
+		// The "switchable door" is the non-opened, non-chosen door.
 		int getSwitchableDoorIndex() {
 			for (int i = 0; i < doors.size(); ++i) {
 				if (!doors[i].getChosen() && !doors[i].getOpen()) {
@@ -143,11 +147,14 @@ export class GameState {
 			return -1;
 		}
 
+		// unchoose chosen door, choose "switchable" door.
 		void switchDoors() {
 			int switchableDoorIndex = getSwitchableDoorIndex();
 			unchooseAllDoors();
 			doors[switchableDoorIndex].choose();
 		}
+
+		// endgame functions
 
 		void switchedAndWon() {
 			++yesSwitchWins;
@@ -177,8 +184,8 @@ export class GameState {
 			return doors;
 		}
 
+		// constructor
 		GameState() {
-			// what happens when I put this in the constructor? Should I pass it in through a parameter instead? Pass what in?
 			srand(time(0)); // This guarantees a NEW random number each time the rand() program runs
 			setupGame();
 
