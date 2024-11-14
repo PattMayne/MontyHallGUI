@@ -41,6 +41,7 @@ const string titleText = "Monty Hall Problem";
 const string loserText = "  DUD  ";
 const string winnerText = "PRIZE";
 const string mysteryText = "  ?  ";
+const string chosenText = "CHOSEN";
 
 const string instructionsText = "Choose a door!";
 const string questionText = "Switch doors?";
@@ -64,9 +65,8 @@ void printInstructions();
 void setInstructionsText(string newText);
 void setQuestionText(string newText);
 void printQuestionAndButtons();
-bool userClickedYes(int x, int y);
-bool userClickedNo(int x, int y);
 void printXY(int x, int y);
+bool userClickedRect(SDL_Rect button, int x, int y);
 
 SDL_Texture* doorTexture = NULL;
 SDL_Texture* openDoorTexture = NULL;
@@ -84,6 +84,7 @@ SDL_Texture* titleTextTexture = NULL;
 SDL_Texture* loserTextTexture = NULL;
 SDL_Texture* winnerTextTexture = NULL;
 SDL_Texture* mysteryTextTexture = NULL;
+SDL_Texture* chosenDoorTextTexture = NULL;
 
 // stats textures (to be updated after every GAME (win or loss))
 SDL_Texture* yesWinsTextTexture = NULL;
@@ -357,6 +358,9 @@ bool initializeSDL2() {
 	SDL_Surface* mysteryTextSurface = TTF_RenderText_Blended(font, mysteryText.c_str(), mysteryTextColor);
 	mysteryTextTexture = SDL_CreateTextureFromSurface(mainRenderer, mysteryTextSurface);
 
+	SDL_Surface* chosenTextSurface = TTF_RenderText_Blended(font, chosenText.c_str(), mysteryTextColor);
+	chosenDoorTextTexture = SDL_CreateTextureFromSurface(mainRenderer, chosenTextSurface);
+
 	// make switch question & button surfaces & textures (and other instruction surfaces and textures)
 	SDL_Surface* buttonYesTextSurface = TTF_RenderText_Blended(font, buttonYesText.c_str(), textColor);
 	buttonYesTextTexture = SDL_CreateTextureFromSurface(mainRenderer, buttonYesTextSurface);
@@ -377,6 +381,7 @@ bool initializeSDL2() {
 	SDL_FreeSurface(mysteryTextSurface);
 	SDL_FreeSurface(buttonYesTextSurface);
 	SDL_FreeSurface(buttonNoTextSurface);
+	SDL_FreeSurface(chosenTextSurface);
 	
 	return true;
 }
@@ -400,25 +405,24 @@ void handleClick(SDL_Event* e) {
 	// see if mouse click hit a button.
 	// Check game phase first, then check if ACTIVE buttons have been pressed.
 	if (gameState.getGamePhase() == GamePhase::chooseDoor) {
-		if (y >= DOOR_Y_POSITION && y < DOOR_Y_POSITION + DOOR_HEIGHT) {
 
-			// See if user chose (clicked) a door.
-			// run through the doors and check their area against x,y of mouse click
-			for (int i = 0; i < 3; ++i) {
-				if (x >= doorRects[i].x && x < (doorRects[i].x + DOOR_WIDTH)) {
-					// user clicked this doorRect
-					gameState.chooseDoor(i);
-					setInstructionsText("You chose door #" + to_string(i + 1));
-				}
+		// See if user chose (clicked) a door.
+		// run through the doors and check their area against x,y of mouse click
+		for (int i = 0; i < 3; ++i) {
+			if (userClickedRect(doorRects[i], x, y)) {
+				// user clicked this doorRect
+				gameState.chooseDoor(i);
+				setInstructionsText("You chose door #" + to_string(i + 1));
 			}
 		}
+
 	} else if(gameState.getGamePhase() == GamePhase::chooseSwitch) {
 		bool userSwitches;
 		bool buttonClicked = false;
-		if (userClickedYes(x, y)) {
+		if (userClickedRect(buttonYesRect, x, y)) {
 			userSwitches = true;
 			buttonClicked = true;
-		} else if (userClickedNo(x, y)) {
+		} else if (userClickedRect(buttonNoRect, x, y)) {
 			userSwitches = false;
 			buttonClicked = true;
 		}
@@ -433,38 +437,34 @@ void handleClick(SDL_Event* e) {
 	}
 	else if (gameState.getGamePhase() == GamePhase::gameOver) {
 		// handle click on "reset game" button (doesn't exist yet)
-		if (userClickedYes(x, y)) {
+		if (userClickedRect(buttonYesRect, x, y)) {
 			gameState.resetGame();
 			setInstructionsText(instructionsText);
 		}
-		else if (userClickedNo(x, y)) {
+		else if (userClickedRect(buttonNoRect, x, y)) {
 			running = false;
 		}
 	}
 }
 
-bool userClickedYes(int x, int y) {
-	return y >= buttonYesRect.y &&
-		y <= buttonYesRect.y + buttonYesRect.h &&
-		x >= buttonYesRect.x &&
-		x <= buttonYesRect.x + buttonYesRect.w;
+// find out if mouse click (x, y) happened within area of given SDL_Rect rectangle
+bool userClickedRect(SDL_Rect button, int x, int y) {
+	return y >= button.y &&
+		y <= button.y + button.h &&
+		x >= button.x &&
+		x <= button.x + button.w;
 }
 
-bool userClickedNo(int x, int y) {
-	return y >= buttonNoRect.y &&
-		y <= buttonNoRect.y + buttonNoRect.h &&
-		x >= buttonNoRect.x &&
-		x <= buttonNoRect.x + buttonNoRect.w;
-}
-
+// Based on game state draw everything (doors, buttons, text)
 void draw() {
 	// Clear window if user input happened
-	SDL_SetRenderDrawColor(mainRenderer, 104, 104, 104, 1);
+	SDL_SetRenderDrawColor(mainRenderer, 145, 145, 154, 1);
 	SDL_RenderClear(mainRenderer);
 
+	// Doors for game mechanics & data. Not the door images.
 	vector<Door> doors = gameState.getDoors();
 
-	// For each door, draw their backgrounds, text,  the door image, and the question marks (where appropriate)
+	// For each door, draw their backgrounds, text, the door image, and the question marks (where appropriate)
 	for (int i = 0; i < doors.size(); ++i) {
 
 		// Draw colored rectangles behind certain doors (open doors or chosen door)		
@@ -503,7 +503,7 @@ void draw() {
 		if (gameState.getGamePhase() == GamePhase::chooseSwitch && !doors[i].getOpen()) {
 			SDL_RenderCopyEx(
 				mainRenderer,
-				mysteryTextTexture,
+				doors[i].getChosen() ? chosenDoorTextTexture : mysteryTextTexture,
 				NULL,
 				&doorTextRects[i],
 				0,
@@ -514,6 +514,7 @@ void draw() {
 	}
 
 	printInstructions();
+	// Make sure the correct text is rendered, depending on gamePhase
 	if (gameState.getGamePhase() == GamePhase::chooseDoor) {
 		setQuestionText(questionText);
 		setInstructionsText(instructionsText);
@@ -525,7 +526,6 @@ void draw() {
 	else if (gameState.getGamePhase() == GamePhase::gameOver) {
 		printQuestionAndButtons();
 	}
-
 
 	// draw stats
 	SDL_RenderCopyEx(mainRenderer, yesWinsTextTexture, NULL, &yesWinsTextRect, 0, NULL, SDL_FLIP_NONE);
@@ -566,7 +566,7 @@ void setQuestionText(string newText) {
 	SDL_FreeSurface(questionSurface);
 }
 
-
+// For sizing purposes keep at least three digits in the stats counter by adding zeroes to the beginning.
 string getThreeDigitCountString(int count) {
 	string countString = to_string(count);
 	while (countString.size() < 3) {
@@ -575,7 +575,7 @@ string getThreeDigitCountString(int count) {
 	return countString;
 }
 
-
+// Stats textures
 void setWinsAndLossesTextures() {
 
 	// Adding extra spaces to keep characters from stretching.
@@ -596,7 +596,7 @@ void setWinsAndLossesTextures() {
 	SDL_Surface* noLossesTextSurface = TTF_RenderText_Blended(font, noLossesText.c_str(), textColor);
 	noLossesTextTexture = SDL_CreateTextureFromSurface(mainRenderer, noLossesTextSurface);
 
-	// Free the surface after creating the texture
+	// Free the surfaces after creating the textures
 	SDL_FreeSurface(yesWinsTextSurface);
 	SDL_FreeSurface(noWinsTextSurface);
 	SDL_FreeSurface(yesLossesTextSurface);
@@ -604,6 +604,7 @@ void setWinsAndLossesTextures() {
 }
 
 
+// Find out where this door should be placed horizontally
 int getDoorHorizontalPosition(int doorIndex) {
 	return PADDING + ((PADDING + DOOR_WIDTH) * doorIndex);
 }
