@@ -470,7 +470,7 @@ void draw() {
 		// Draw colored rectangles behind certain doors (open doors or chosen door)		
 		if (doors[i].getChosen()) {
 			// blue
-			SDL_SetRenderDrawColor(mainRenderer, 70, 40, 200, 1);
+			SDL_SetRenderDrawColor(mainRenderer, 95, 77, 227, 1);
 			SDL_RenderFillRect(mainRenderer, &doorRects[i]);
 		} else if (doors[i].getOpen() && !doors[i].getWinner()) {
 			SDL_SetRenderDrawColor(mainRenderer, 220, 34, 34, 1);
