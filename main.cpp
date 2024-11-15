@@ -1,6 +1,18 @@
 /*
-*
-*
+* A small game to demonstate the Monty Hall Problem.
+* There are three doors. One of them is the "winner" while the other two are duds.
+* User picks one door. Then we open a "dud" from among the other two doors, and we open that door to show that it's a dud.
+* Then user is prompted to either switch with the other unopened door, or hold onto their current selection.
+* Finally we display the results. Is the user's selection the "winner" or a "dud" ?
+* We also display cumulative results, because the whole point is to see whether
+* switching or holding is statistically advantageous.
+* 
+* Game state (and stats) is held in a GameState object.
+* Door objects hold information about the doors themselves (winner/dud ... open/closed ... chosen/not-chosen).
+* GameState object operates on the doors.
+* 
+* main script accepts user input, displays GUI, and manages game loop.
+* It's mostly concerned with SDL2 library.
 */
 
 
@@ -11,8 +23,8 @@
 #include <iostream>
 #include <SDL_ttf.h>
 #include <cmath>
-#include<vector>
-#include<cstdlib>
+#include <vector>
+#include <cstdlib>
 #include <time.h>
 
 const bool DEBUG = false;
@@ -390,7 +402,7 @@ bool initializeSDL2() {
 /*
 * The game mechanics mostly happen here.
 * User input changes the state of the gameState object.
-* Then the draw() function draws new things based on that new state.
+* Then the draw() function draws new state.
 */
 void handleClick(SDL_Event* e) {
 

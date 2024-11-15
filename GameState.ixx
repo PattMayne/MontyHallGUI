@@ -1,3 +1,9 @@
+/*
+* Game state (and stats) is held in a GameState object.
+* Door objects hold information about the doors themselves (winner/dud ... open/closed ... chosen/not-chosen).
+* GameState object operates on the doors.
+*/
+
 module;
 export module GameState;
 
