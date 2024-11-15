@@ -10,10 +10,13 @@ export module GameState;
 using namespace std;
 using std::vector;
 
+// The game moves through three phases, initiated by user action.
+// Game state affects display, user options, and how input is processed.
 export enum class GamePhase {
 	chooseDoor, chooseSwitch, gameOver
 };
 
+// Meta data about the "door." Does not include the images.
 export class Door {
 
 	private:
@@ -22,11 +25,14 @@ export class Door {
 		bool isChosen;
 
 	public:
+		// constructor
 		Door() {
 			isWinner = false;
 			isOpen = false;
 			isChosen = false;
 		}
+
+		// setters
 
 		void open() {
 			isOpen = true;
@@ -36,7 +42,7 @@ export class Door {
 			isOpen = false;
 		}
 
-		void setWinner() {
+		void makeWinner() {
 			isWinner = true;
 		}
 
@@ -47,6 +53,8 @@ export class Door {
 		void unchoose() {
 			isChosen = false;
 		}
+
+		// getters
 
 		bool getWinner() {
 			return isWinner;
@@ -74,10 +82,11 @@ export class GameState {
 		int noSwitchLosses;
 
 		// randomly choose one door to be the winner
-		void setWinner() {
-			doors[rand() % 3].setWinner();
+		void chooseWinner() {
+			doors[rand() % 3].makeWinner();
 		}
 
+		// returns a vector of indexes/indices of Door objects which are NOT winners
 		vector<int> getLosingDoorIndices() {
 			vector<int> losingDoorIndices;
 
@@ -133,17 +142,24 @@ export class GameState {
 		void setupGame() {
 			gamePhase = GamePhase::chooseDoor;
 			doors = { Door(), Door(), Door() };
-			setWinner();
+			chooseWinner();
 		}
 
 		// The "switchable door" is the non-opened, non-chosen door.
+		// Only works during "chooseSwitch" phase
 		int getSwitchableDoorIndex() {
-			for (int i = 0; i < doors.size(); ++i) {
-				if (!doors[i].getChosen() && !doors[i].getOpen()) {
-					return i;
+			if (gamePhase == GamePhase::chooseSwitch) {
+				for (int i = 0; i < doors.size(); ++i) {
+					if (!doors[i].getChosen() && !doors[i].getOpen()) {
+						return i;
+					}
 				}
 			}
-			std::cout << "ERROR: NO adequate door index found";
+			else {
+				std::cerr << "ERROR: wrong game phase";
+			}
+			
+			std::cerr << "ERROR: NO adequate door index found";
 			return -1;
 		}
 
@@ -156,26 +172,54 @@ export class GameState {
 
 		// endgame functions
 
+		// update stats
+
 		void switchedAndWon() {
-			++yesSwitchWins;
+			if (gamePhase == GamePhase::chooseSwitch) {
+				++yesSwitchWins;
+			}
+			else {
+				std::cerr << "ERROR: wrong game phase";
+			}
 		}
 
 		void switchedAndLost() {
-			++yesSwitchLosses;
+			if (gamePhase == GamePhase::chooseSwitch) {
+				++yesSwitchLosses;
+			}
+			else {
+				std::cerr << "ERROR: wrong game phase";
+			}
 		}
 
 		void heldAndWon() {
-			++noSwitchWins;
+			if (gamePhase == GamePhase::chooseSwitch) {
+				++noSwitchWins;
+			}
+			else {
+				std::cerr << "ERROR: wrong game phase";
+			}
 		}
 
 		void heldAndLost() {
-			++noSwitchLosses;
+			if (gamePhase == GamePhase::chooseSwitch) {
+				++noSwitchLosses;
+			}
+			else {
+				std::cerr << "ERROR: wrong game phase";
+			}
 		}
 
+		// only open all doors if the game is over
 		void openAllDoors() {
-			for (int i = 0; i < doors.size(); ++i) {
-				doors[i].open();
+			if (gamePhase == GamePhase::gameOver) {
+				for (int i = 0; i < doors.size(); ++i) {
+					doors[i].open();
+				}
 			}
+			else {
+				std::cerr << "ERROR: wrong game phase";
+			}			
 		}
 
 
@@ -195,15 +239,6 @@ export class GameState {
 			yesSwitchLosses = 0;
 			noSwitchWins = 0;
 			noSwitchLosses = 0;
-		}
-
-		void chooseDoor(int chosenDoorIndex) {
-			unchooseAllDoors();
-			doors[chosenDoorIndex].choose();
-			gamePhase = GamePhase::chooseSwitch;
-
-			// open a random OTHER door
-			openOneLosingDoor();
 		}
 
 		int getYesSwitchWins() {
@@ -248,6 +283,20 @@ export class GameState {
 			return -1;
 		}
 
+		// User input functions
+
+		// Mark user's "chosen" door as such.
+		void userChoosesDoor(int chosenDoorIndex) {
+			// First make sure it will be the ONLY "chosen" door
+			unchooseAllDoors();
+			doors[chosenDoorIndex].choose();
+			// open a random OTHER door
+			openOneLosingDoor();
+			// Game phase is over. Advance the game phase.
+			gamePhase = GamePhase::chooseSwitch;
+		}
+
+		// User either clicked "YES" or "NO" to switching doors
 		bool chooseSwitchAndEndGame(bool userSwitchedDoors) {
 			if (userSwitchedDoors) {
 				switchDoors();
@@ -274,14 +323,14 @@ export class GameState {
 				}
 			}
 
-			openAllDoors();
+			// Advance game phase
 			gamePhase = GamePhase::gameOver;
+			// Display results
+			openAllDoors();
 			return userIsWinner;
 		}
 
 		void resetGame() {
 			setupGame();
-		}
-		
+		}		
 };
-

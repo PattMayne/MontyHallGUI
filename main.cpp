@@ -411,7 +411,7 @@ void handleClick(SDL_Event* e) {
 		for (int i = 0; i < 3; ++i) {
 			if (userClickedRect(doorRects[i], x, y)) {
 				// user clicked this doorRect
-				gameState.chooseDoor(i);
+				gameState.userChoosesDoor(i);
 				setInstructionsText("You chose door #" + to_string(i + 1));
 			}
 		}
