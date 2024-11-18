@@ -16,20 +16,19 @@
 */
 
 
-#include <SDL.h>
-#include <SDL_image.h>
+#include <SDL2/SDL.h>
+#include <SDL2/SDL_image.h>
 #include <stdio.h>
 #include <string>
 #include <iostream>
-#include <SDL_ttf.h>
+#include <SDL2/SDL_ttf.h>
 #include <cmath>
 #include <vector>
 #include <cstdlib>
 #include <time.h>
+#include "GameState.cpp"
 
 const bool DEBUG = false;
-
-import GameState;
 
 using std::string;
 using std::cout;

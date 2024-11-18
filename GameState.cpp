@@ -4,9 +4,6 @@
 * GameState object operates on the doors.
 */
 
-module;
-export module GameState;
-
 #include<vector>
 #include<cstdlib> // Needed for rand() and srand()
 #include<ctime>   // Needed for time()
@@ -18,12 +15,12 @@ using std::vector;
 
 // The game moves through three phases, initiated by user action.
 // Game state affects display, user options, and how input is processed.
-export enum class GamePhase {
+enum class GamePhase {
 	chooseDoor, chooseSwitch, gameOver
 };
 
 // Meta data about the "door." Does not include the images.
-export class Door {
+class Door {
 
 	private:
 		bool isWinner;
@@ -75,7 +72,7 @@ export class Door {
 		}
 };
 
-export class GameState {
+class GameState {
 	private:
 		vector<Door> doors;
 		GamePhase gamePhase;
